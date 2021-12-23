@@ -4,6 +4,9 @@ import org.bukkit.enchantments.Enchantment;
 
 import java.util.Random;
 
+/**
+ * Internal class used for handling custom Villager Trader logic.
+ */
 public class VillagerGenerator {
 
     public static Enchantment getRandomEnchantment() {

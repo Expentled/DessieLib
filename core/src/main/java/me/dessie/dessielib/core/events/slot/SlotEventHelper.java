@@ -30,10 +30,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/*
-Handles MOST possible ways that an Inventory slot can be changed.
-All possible Inventory Movements, Picking up items, Dropping items are all supported.
-Putting on and taking off armor, breaking items, and swapping offhands are also supported.
+/**
+ * Called when an Inventory slot is changed, can be a non-player Inventory.
+ *
+ * Note: Before this event will fire, you must register it by calling {@link SlotEventHelper#register(JavaPlugin)}
+ *
+ * This event should handle:
+ *   1. A Player equipping armor
+ *   2. Armor being dispensed onto a Player
+ *   3. A Player's item breaks (and therefore no longer exists)
+ *   4. Player dropping/picking up items
+ *   5. Swapping items with main/offhands.
+ *   6. Player interacting with their inventory (This is not cancellable)
+ *   7. Crafting result generated
  */
 public class SlotEventHelper implements Listener {
 
@@ -61,7 +70,7 @@ public class SlotEventHelper implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onArmorDispense(BlockDispenseArmorEvent event) {
+    private void onArmorDispense(BlockDispenseArmorEvent event) {
         if(event.isCancelled()) return;
         if(event.getTargetEntity() instanceof Player) {
             doArmorUpdate((Player) event.getTargetEntity(), event.getItem());
@@ -69,7 +78,7 @@ public class SlotEventHelper implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onArmorEquip(PlayerInteractEvent event) {
+    private void onArmorEquip(PlayerInteractEvent event) {
         if(event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         if(event.getClickedBlock() != null && isInteractable(event.getPlayer(), event.getClickedBlock())) return;
         if(event.getHand() != EquipmentSlot.HAND && event.getHand() != EquipmentSlot.OFF_HAND) return;
@@ -93,7 +102,7 @@ public class SlotEventHelper implements Listener {
 
     //May not work if they have more than one of the EXACT same item, but likelihood is small.
     @EventHandler
-    public void onBreak(PlayerItemBreakEvent event) {
+    private void onBreak(PlayerItemBreakEvent event) {
         ItemStack broken = event.getBrokenItem();
         int slot = event.getPlayer().getInventory().first(broken);
         if(slot == -1) {
@@ -110,7 +119,7 @@ public class SlotEventHelper implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onDrop(PlayerDropItemEvent event) {
+    private void onDrop(PlayerDropItemEvent event) {
         if(event.isCancelled()) return;
 
         if(didInventoryDrop.contains(event.getPlayer().getUniqueId())) {
@@ -138,7 +147,7 @@ public class SlotEventHelper implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onPickup(EntityPickupItemEvent event) {
+    private void onPickup(EntityPickupItemEvent event) {
         if(!(event.getEntity() instanceof Player)) return;
         if(event.isCancelled()) return;
         Player player = (Player) event.getEntity();
@@ -159,7 +168,7 @@ public class SlotEventHelper implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onSwap(PlayerSwapHandItemsEvent event) {
+    private void onSwap(PlayerSwapHandItemsEvent event) {
         if(event.isCancelled()) return;
 
         int slot = event.getPlayer().getInventory().getHeldItemSlot();
@@ -176,7 +185,7 @@ public class SlotEventHelper implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onDrag(InventoryDragEvent event) {
+    private void onDrag(InventoryDragEvent event) {
         for(int slot : event.getRawSlots()) {
             SlotUpdateEvent slotEvent = SlotUpdateEvent.attemptFire((Player) event.getWhoClicked(), event.getView().getInventory(slot),
                     event.getView().convertSlot(slot),
@@ -187,7 +196,7 @@ public class SlotEventHelper implements Listener {
 
     //Used for when a player closes an inventory such as a Crafting Table, and items go back into their inventory.
     @EventHandler
-    public void onClose(InventoryCloseEvent event) {
+    private void onClose(InventoryCloseEvent event) {
         Player player = (Player) event.getPlayer();
 
         Inventory playerInventory = Bukkit.createInventory(player, player.getInventory().getType());
@@ -200,7 +209,7 @@ public class SlotEventHelper implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onClick(InventoryClickEvent event) {
+    private void onClick(InventoryClickEvent event) {
         if(event.isCancelled()) return;
         if(isNullOrAir(event.getCursor()) && isNullOrAir(event.getCurrentItem())) return;
 

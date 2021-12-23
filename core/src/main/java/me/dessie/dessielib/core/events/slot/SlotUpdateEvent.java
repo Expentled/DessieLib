@@ -41,38 +41,121 @@ public class SlotUpdateEvent extends PlayerEvent implements Cancellable {
         this(who, inventory, slot, newItem, oldItem, updateType, null, null);
     }
 
+    /**
+     * Fires a SlotUpdateEvent
+     *
+     * @param who The Player
+     * @param inventory The Inventory that was updated
+     * @param slot The slot that was updated
+     * @param newItem The new ItemStack in that slot
+     * @param oldItem The old ItemStack that was in the slot
+     * @param updateType The update type of this event
+     * @param newInv The updated Inventory when the UpdateType is {@link UpdateType#INVENTORY_INTERACT}
+     * @param oldInv The old Inventory when the UpdateType is {@link UpdateType#INVENTORY_INTERACT}
+     * @return The SlotUpdateEvent instance
+     */
     public static SlotUpdateEvent attemptFire(Player who, Inventory inventory, int slot, ItemStack newItem, ItemStack oldItem, UpdateType updateType, Inventory newInv, Inventory oldInv) {
         SlotUpdateEvent event = new SlotUpdateEvent(who, inventory, slot, newItem, oldItem, updateType, newInv, oldInv);
         Bukkit.getPluginManager().callEvent(event);
         return event;
     }
 
+    /**
+     * Fires a SlotUpdateEvent
+     *
+     * @param who The Player
+     * @param inventory The Inventory that was updated
+     * @param slot The slot that was updated
+     * @param newItem The new ItemStack in that slot
+     * @param oldItem The old ItemStack that was in the slot
+     * @param updateType The update type of this event
+     * @return The SlotUpdateEvent instance
+     */
     public static SlotUpdateEvent attemptFire(Player who, Inventory inventory, int slot, ItemStack newItem, ItemStack oldItem, UpdateType updateType) {
         SlotUpdateEvent event = new SlotUpdateEvent(who, inventory, slot, newItem, oldItem, updateType);
         Bukkit.getPluginManager().callEvent(event);
         return event;
     }
 
+    /**
+     * @return The slot that was updated.
+     */
     public int getSlot() {
         return slot;
     }
 
+    /**
+     * @return The new ItemStack that is in the slot.
+     */
     public ItemStack getNewItem() { return newItem; }
+
+
+    /**
+     * @return The old ItemStack that was in the slot.
+     */
     public ItemStack getOldItem() { return oldItem; }
+
+    /**
+     * @return The {@link UpdateType} of this event.
+     */
     public UpdateType getUpdateType() { return updateType; }
+
+    /**
+     * @return The Inventory that was updated.
+     */
     public Inventory getInventory() { return inventory; }
 
+    /**
+     * Will return null if UpdateType is not INVENTORY_INTERACT
+     * @return The new Inventory with the new contents
+     */
     public Inventory getNewInventory() { return newInventory; }
+
+    /**
+     * Will return null if UpdateType is not INVENTORY_INTERACT
+     * @return The old Inventory with the old contents
+     */
     public Inventory getOldInventory() { return oldInventory; }
 
+    /**
+     * @return If the Inventory that was updated belongs to a player.
+     */
     public boolean isPlayerInventory() { return this.getInventory().getType() == InventoryType.PLAYER; }
-    public boolean isOffhand() { return this.getSlot() == 40; }
-    public boolean isBoots() { return this.getSlot() == 36; }
-    public boolean isLeggings() { return this.getSlot() == 37; }
-    public boolean isChestplate() { return this.getSlot() == 38; }
-    public boolean isHelmet() { return this.getSlot() == 39; }
-    public boolean isArmor() { return isBoots() || isLeggings() || isChestplate() || isHelmet(); }
-    public boolean isInMainHand() { return player.getInventory().getHeldItemSlot() == this.getSlot(); }
+
+    /**
+     * @return If the slot that was updated is the offhand slot.
+     */
+    public boolean isOffhand() { return isPlayerInventory() && this.getSlot() == 40; }
+
+    /**
+     * @return If the slot that was updated is the boots armor slot.
+     */
+    public boolean isBoots() { return isPlayerInventory() && this.getSlot() == 36; }
+
+    /**
+     * @return If the slot that was updated is the leggings armor slot.
+     */
+    public boolean isLeggings() { return isPlayerInventory() && this.getSlot() == 37; }
+
+    /**
+     * @return If the slot that was updated is the chestplate armor slot.
+     */
+    public boolean isChestplate() { return isPlayerInventory() && this.getSlot() == 38; }
+
+    /**
+     * @return If the slot that was updated is the boots helmet slot.
+     */
+    public boolean isHelmet() { return isPlayerInventory() && this.getSlot() == 39; }
+
+    /**
+     * @return If the slot that was updated was an armor slot at all
+     */
+    public boolean isArmor() { return isPlayerInventory() && (isBoots() || isLeggings() || isChestplate() || isHelmet()); }
+
+    /**
+     * @return If the slot that was updated is currently the Player's main hand.
+     */
+    public boolean isInMainHand() { return isPlayerInventory() && getPlayer().getInventory().getHeldItemSlot() == this.getSlot(); }
 
     @Override
     public HandlerList getHandlers() {

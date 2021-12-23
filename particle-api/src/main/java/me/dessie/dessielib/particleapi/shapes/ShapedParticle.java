@@ -1,14 +1,13 @@
-package me.dessie.dessielib.particleapi;
+package me.dessie.dessielib.particleapi.shapes;
 
 import me.dessie.dessielib.particleapi.animation.ParticleAnimator;
 import me.dessie.dessielib.particleapi.collison.ParticleCollider;
-import me.dessie.dessielib.particleapi.point.Point3D;
 import me.dessie.dessielib.particleapi.transform.ParticleTransform;
 import me.dessie.dessielib.particleapi.wrapper.ParticleData;
 import org.bukkit.Location;
 import org.bukkit.Particle;
-import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,18 +17,23 @@ public class ShapedParticle {
     private Particle particle;
     private Object particleOptions;
 
-    private int points;
-    private BiFunction<Location, Integer, Point3D> shapeFunction;
+    private final int points;
+    private BiFunction<Location, Integer, Vector> shapeFunction;
     private double particleSpeed;
     private final List<ParticleTransform> transforms = new ArrayList<>();
-    private List<ParticleCollider> colliders = new ArrayList<>();
+    private final List<ParticleCollider<?>> colliders = new ArrayList<>();
     private ParticleAnimator animator;
 
-    public ShapedParticle(Particle particle, int points, BiFunction<Location, Integer, Point3D> shapeFunction) {
+    /**
+     * @param particle The {@link Particle} to render.
+     * @param points
+     * @param shapeFunction
+     */
+    public ShapedParticle(Particle particle, int points, BiFunction<Location, Integer, Vector> shapeFunction) {
         this(new ParticleData(particle, null), points, shapeFunction);
     }
 
-    public ShapedParticle(ParticleData data, int points, BiFunction<Location, Integer, Point3D> shapeFunction) {
+    public ShapedParticle(ParticleData data, int points, BiFunction<Location, Integer, Vector> shapeFunction) {
         this.particle = data.getParticle();
         this.particleOptions = data.getOptions();
         this.points = points;
@@ -40,13 +44,13 @@ public class ShapedParticle {
     }
 
     public Particle getParticle() { return particle; }
-    public BiFunction<Location, Integer, Point3D> getShapeFunction() { return shapeFunction; }
+    public BiFunction<Location, Integer, Vector> getShapeFunction() { return shapeFunction; }
     public int getPoints() { return points; }
     public double getParticleSpeed() { return particleSpeed; }
     public List<ParticleTransform> getTransforms() { return transforms; }
     public ParticleAnimator getAnimator() { return animator; }
     public Object getParticleOptions() { return particleOptions; }
-    public List<ParticleCollider> getColliders() { return colliders; }
+    public List<ParticleCollider<?>> getColliders() { return colliders; }
 
     public ShapedParticle setParticleSpeed(double particleSpeed) {
         this.particleSpeed = particleSpeed;
@@ -75,12 +79,12 @@ public class ShapedParticle {
         return this;
     }
 
-    public ShapedParticle setShapeFunction(BiFunction<Location, Integer, Point3D> shapeFunction) {
+    public ShapedParticle setShapeFunction(BiFunction<Location, Integer, Vector> shapeFunction) {
         this.shapeFunction = shapeFunction;
         return this;
     }
 
-    public ShapedParticle addCollider(ParticleCollider collider) {
+    public ShapedParticle addCollider(ParticleCollider<?> collider) {
         this.getColliders().add(collider);
         return this;
     }
@@ -92,15 +96,15 @@ public class ShapedParticle {
         }
     }
 
-    public void display(World world, Location location) {
+    public void display(Location location) {
         //Start the animation if it's not already running
         if(!this.getAnimator().isRunning()) {
-            this.getAnimator().start(world, location);
+            this.getAnimator().start(location);
         }
     }
 
-    public List<Point3D> getPoints(Location location) {
-        List<Point3D> points = new ArrayList<>();
+    public List<Vector> getPoints(Location location) {
+        List<Vector> points = new ArrayList<>();
 
         //Calculate each particle point, by applying them to the shape function.
         for (int i = 0; i < this.getPoints(); i++) {
@@ -111,17 +115,17 @@ public class ShapedParticle {
         this.getTransforms().forEach(transform -> {
             if(transform.isStatic()) {
                 //Get a complete copy of the Shape Points.
-                List<Point3D> temp = Point3D.copyOf(points);
+                List<Vector> temp = new ArrayList<>(points.stream().map(point -> new Vector(point.getX(), point.getY(), point.getZ())).toList());
 
                 //Apply to the first set of points.
                 transform.applyToPoints(location, points);
 
                 //Now apply the transformation to each subsequent frame.
-                List<Point3D> toApply = Point3D.copyOf(temp);
+                List<Vector> toApply = new ArrayList<>(temp.stream().map(point -> new Vector(point.getX(), point.getY(), point.getZ())).toList());
                 for(int i = 1; i < transform.getFrames(); i++) {
                     transform.applyToPoints(location, toApply);
                     points.addAll(toApply);
-                    toApply = Point3D.copyOf(temp);
+                    toApply = new ArrayList<>(temp.stream().map(point -> new Vector(point.getX(), point.getY(), point.getZ())).toList());
                 }
             } else {
                 transform.applyToPoints(location, points);

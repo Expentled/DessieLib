@@ -1,11 +1,11 @@
 package me.dessie.dessielib.enchantmentapi.listener;
 
-import me.dessie.dessielib.enchantmentapi.CEnchantment;
-import me.dessie.dessielib.enchantmentapi.CEnchantmentLoader;
-import me.dessie.dessielib.enchantmentapi.activator.Activator;
 import me.dessie.dessielib.core.events.slot.SlotEventHelper;
 import me.dessie.dessielib.core.events.slot.SlotUpdateEvent;
 import me.dessie.dessielib.core.events.slot.UpdateType;
+import me.dessie.dessielib.enchantmentapi.CEnchantment;
+import me.dessie.dessielib.enchantmentapi.CEnchantmentAPI;
+import me.dessie.dessielib.enchantmentapi.activator.Activator;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.LivingEntity;
@@ -23,10 +23,14 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
 
+
+/**
+ * Internal listener for firing Enchantment consumers.
+ */
 public class CEnchantmentListener implements Listener {
 
     @EventHandler
-    public void onArrowLand(ProjectileHitEvent event) {
+    private void onArrowLand(ProjectileHitEvent event) {
         if(!(event.getEntity() instanceof Arrow)) return;
         if(!(event.getEntity().getShooter() instanceof LivingEntity entity)) return;
 
@@ -41,7 +45,7 @@ public class CEnchantmentListener implements Listener {
     }
 
     @EventHandler
-    public void onArrowShoot(ProjectileLaunchEvent event) {
+    private void onArrowShoot(ProjectileLaunchEvent event) {
         if(!(event.getEntity() instanceof Arrow)) return;
         if(!(event.getEntity().getShooter() instanceof LivingEntity entity)) return;
 
@@ -56,7 +60,7 @@ public class CEnchantmentListener implements Listener {
     }
 
     @EventHandler
-    public void onRightClick(PlayerInteractEvent event) {
+    private void onRightClick(PlayerInteractEvent event) {
         if(event.getHand() != EquipmentSlot.HAND && event.getHand() != EquipmentSlot.OFF_HAND) return;
         if(event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
             for (CEnchantment enchantment : CEnchantment.getEnchantments()) {
@@ -71,7 +75,7 @@ public class CEnchantmentListener implements Listener {
     }
 
     @EventHandler
-    public void onBlockBreak(BlockBreakEvent event) {
+    private void onBlockBreak(BlockBreakEvent event) {
         for (CEnchantment enchantment : CEnchantment.getEnchantments()) {
             List<ItemStack> items = enchantment.getEnchantmentActivator().getItems(event.getPlayer());
             items.forEach(item -> {
@@ -83,7 +87,7 @@ public class CEnchantmentListener implements Listener {
     }
 
     @EventHandler
-    public void onBlockPlace(BlockPlaceEvent event) {
+    private void onBlockPlace(BlockPlaceEvent event) {
         for (CEnchantment enchantment : CEnchantment.getEnchantments()) {
             List<ItemStack> items = enchantment.getEnchantmentActivator().getItems(event.getPlayer());
             items.forEach(item -> {
@@ -95,7 +99,7 @@ public class CEnchantmentListener implements Listener {
     }
 
     @EventHandler
-    public void onAttack(EntityDamageByEntityEvent event) {
+    private void onAttack(EntityDamageByEntityEvent event) {
         if(event.getDamager() instanceof LivingEntity entity) {
             for (CEnchantment enchantment : CEnchantment.getEnchantments()) {
                 List<ItemStack> items = enchantment.getEnchantmentActivator().getItems(entity);
@@ -110,7 +114,7 @@ public class CEnchantmentListener implements Listener {
     }
 
     @EventHandler
-    public void onDeath(EntityDeathEvent event) {
+    private void onDeath(EntityDeathEvent event) {
         for (CEnchantment enchantment : CEnchantment.getEnchantments()) {
             List<ItemStack> items = enchantment.getEnchantmentActivator().getItems(event.getEntity());
             items.forEach(item -> {
@@ -122,7 +126,7 @@ public class CEnchantmentListener implements Listener {
     }
 
     @EventHandler
-    public void onDamaged(EntityDamageEvent event) {
+    private void onDamaged(EntityDamageEvent event) {
         if(!(event.getEntity() instanceof LivingEntity)) return;
 
         for (CEnchantment enchantment : CEnchantment.getEnchantments()) {
@@ -136,7 +140,7 @@ public class CEnchantmentListener implements Listener {
     }
 
     @EventHandler
-    public void onDrop(PlayerDropItemEvent event) {
+    private void onDrop(PlayerDropItemEvent event) {
         ItemStack item = event.getItemDrop().getItemStack();
 
         for(CEnchantment enchantment : CEnchantment.getEnchantments(item)) {
@@ -146,7 +150,7 @@ public class CEnchantmentListener implements Listener {
     }
 
     @EventHandler
-    public void onPickup(EntityPickupItemEvent event) {
+    private void onPickup(EntityPickupItemEvent event) {
         ItemStack item = event.getItem().getItemStack();
 
         for(CEnchantment enchantment : CEnchantment.getEnchantments(item)) {
@@ -160,7 +164,7 @@ public class CEnchantmentListener implements Listener {
     Also send proper updates if armor is changed.
      */
     @EventHandler
-    public void onSlotUpdate(SlotUpdateEvent event) {
+    private void onSlotUpdate(SlotUpdateEvent event) {
         if(!event.isPlayerInventory()) return;
         if(event.isArmor()) {
             for (CEnchantment enchantment : CEnchantment.getEnchantments(event.getOldItem())) {
@@ -305,11 +309,11 @@ public class CEnchantmentListener implements Listener {
     }
 
     @EventHandler
-    public void onItemHold(PlayerItemHeldEvent event) {
+    private void onItemHold(PlayerItemHeldEvent event) {
         ItemStack newItem = event.getPlayer().getInventory().getItem(event.getNewSlot());
         ItemStack previousItem = event.getPlayer().getInventory().getItem(event.getPreviousSlot());
 
-        Bukkit.getScheduler().runTask(CEnchantmentLoader.getPlugin(), () -> {
+        Bukkit.getScheduler().runTask(CEnchantmentAPI.getPlugin(), () -> {
             SlotUpdateEvent slotEvent = new SlotUpdateEvent(event.getPlayer(), event.getPlayer().getInventory(), event.getNewSlot(), newItem, previousItem, UpdateType.UNKNOWN);
             onSlotUpdate(slotEvent);
         });

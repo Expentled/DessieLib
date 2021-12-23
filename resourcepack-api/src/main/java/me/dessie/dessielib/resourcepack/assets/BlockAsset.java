@@ -3,8 +3,8 @@ package me.dessie.dessielib.resourcepack.assets;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import me.dessie.dessielib.resourcepack.ResourcePackBuilder;
 import me.dessie.dessielib.core.utils.json.JsonObjectBuilder;
+import me.dessie.dessielib.resourcepack.ResourcePackBuilder;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Material;
 
@@ -14,6 +14,13 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * Creates a custom texture and model for a {@link Material} block.
+ *
+ * @see TextureAsset for information on how textures are passed.
+ * @see BlockStateAsset for how to also use this to replace specific states.
+ *
+ */
 public class BlockAsset extends Asset {
 
     private final List<TextureAsset> textures = new ArrayList<>();
@@ -35,17 +42,33 @@ public class BlockAsset extends Asset {
     //This also supports custom models.
     private String parentModelType;
 
+    /**
+     *
+     * @param name The name of the asset.
+     * @param block The {@link Material} this asset replaces.
+     * @param modelJson A provided default model JSON to use.
+     * @param textures The {@link TextureAsset}s
+     */
     public BlockAsset(String name, Material block, @Nullable File modelJson, TextureAsset... textures) {
         this(name, block, block.name().toLowerCase(Locale.ROOT), modelJson, true, textures);
     }
 
+    /**
+     *
+     * @param name The name of the asset.
+     * @param block The {@link Material} this asset replaces.
+     * @param modelJson A provided default model JSON to use.
+     * @param replaceAll If this model replaces all states of this block
+     *                   If this is false, you need to use BlockStateAssets to determine when this model is shown.
+     * @param textures The {@link TextureAsset}s
+     */
     public BlockAsset(String name, Material block, @Nullable File modelJson, boolean replaceAll, TextureAsset... textures) {
         this(name, block, block.name().toLowerCase(Locale.ROOT), modelJson, replaceAll, textures);
     }
 
     /**
      * @param name The name of the custom block asset.
-     * @param block The Material this asset replaces
+     * @param block The {@link Material} this asset replaces
      * @param replacementName The name within the resource pack. Generally this can be ignored because it can
      *                        be assumed from the Material.
      *
@@ -54,7 +77,7 @@ public class BlockAsset extends Asset {
      * @param modelJson A provided default model JSON
      * @param replaceAll If this model replaces all states of this block
      *                   If this is false, you need to use BlockStateAssets to determine when this model is shown.
-     * @param textures The textures
+     * @param textures The {@link TextureAsset}s
      */
     public BlockAsset(String name, Material block, String replacementName, @Nullable File modelJson, boolean replaceAll, TextureAsset... textures) {
         super(name);
@@ -73,111 +96,166 @@ public class BlockAsset extends Asset {
 
         //Set the default parent.
         this.parentModelType = "minecraft:block/cube_all";
+
+        this.setGenerator(new AssetGenerator() {
+            @Override
+            public void init(ResourcePackBuilder builder, List<Asset> assetList) throws IOException {
+                List<BlockAsset> assets = this.cast(BlockAsset.class, assetList);
+
+                for(BlockAsset asset : assets) {
+                    this.createDirectories(asset.getMinecraftBlockModelFolder(), asset.getResourceBlockModelFolder(), asset.getResourceBlockTextureFolder());
+
+                    //Copy the textures
+                    for(TextureAsset texture : asset.getTextures()) {
+                        if(texture.getTextureFile() == null) continue;
+                        FileUtils.copyFile(texture.getTextureFile(), new File(asset.getResourceBlockTextureFolder() + "/" + texture.getTextureFile().getName()));
+                    }
+                }
+            }
+
+            @Override
+            public void generate(ResourcePackBuilder builder, List<Asset> assetList) throws IOException {
+
+                List<BlockAsset> assets = this.cast(BlockAsset.class, assetList);
+
+                for(BlockAsset asset : assets) {
+                    String fileName = asset.getReplacementName() + ".json";
+
+                    //Create the Minecraft model replacement file.
+                    //Only do this if all states should be overwritten.
+                    //------------------------------------------------
+                    if(asset.isReplaces()) {
+                        File assetFile = new File(asset.getMinecraftBlockModelFolder(), fileName);
+                        //Generate the .json for the asset with the appropriate custom model id.
+                        JsonObject json = new JsonObjectBuilder().add("parent", asset.getNamespace() + ":block/" + asset.getName())
+                                .getObject();
+                        //Save the JSON file.
+                        write(json, assetFile);
+                    }
+                    //------------------------------------------------
+
+                    //Create or Copy the model file.
+                    //------------------------------------------------
+                    File customModel = new File(asset.getResourceBlockModelFolder(), asset.getName() + ".json");
+                    if(asset.getModel() == null) {
+                        JsonObjectBuilder textureObject = new JsonObjectBuilder();
+                        for(TextureAsset texture : asset.getTextures()) {
+                            //If the file is null, the texture is just whatever name they provided.
+                            //If the file isn't null, we get the texture from its name.
+                            if(texture.getTextureFile() == null) {
+                                textureObject.add(texture.getKey(), texture.getName());
+                            } else {
+                                textureObject.add(texture.getKey(), asset.getNamespace() + ":block/" + texture.getName());
+                            }
+                        }
+
+                        JsonObject json = new JsonObjectBuilder().add("parent", asset.getParentModel())
+                                .add("textures", textureObject.getObject()).getObject();
+
+                        write(json, customModel);
+                    } else {
+                        try {
+                            //Load in the provided JSON file.
+                            JsonObject modelJson = new JsonParser().parse(new FileReader(asset.getModel())).getAsJsonObject();
+                            JsonObject textures = modelJson.get("textures").getAsJsonObject();
+
+                            //Make sure the textures point to the correct .png textures.
+                            for(Map.Entry<String, JsonElement> entry : textures.entrySet()) {
+                                //Remap to the custom namespace if it's not Minecraft.
+                                if(!entry.getValue().getAsString().startsWith("minecraft:")) {
+                                    textures.addProperty(entry.getKey(), asset.getNamespace() + ":block/" + asset.getName());
+                                }
+                            }
+
+                            //Write the file.
+                            write(modelJson, customModel);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    //------------------------------------------------
+                }
+
+
+            }
+        });
+
     }
 
+    /**
+     * Sets if this block replaces all of its states or not.
+     * If false, you'll need to use {@link BlockStateAsset}s to choose models.
+     *
+     * @param replaces If the texture replaces all the states.
+     * @return The BlockAsset instance.
+     */
     public BlockAsset setReplaces(boolean replaces) {
         this.replaces = replaces;
         return this;
     }
 
+    /**
+     * Sets the parent model type, for example
+     * "minecraft:block/fence_post" or "minecraft:block/template_anvil"
+     * You may need to look into the vanilla resource pack to view what model type you need.
+     *
+     * @param parentModelType The new parent model type.
+     * @return The BlockAsset instance.
+     */
     public BlockAsset setParentModelType(String parentModelType) {
         this.parentModelType = parentModelType;
         return this;
     }
 
+    /**
+     * @return The parent model type.
+     */
     public String getParentModel() {return parentModelType;}
+
+    /**
+     * @return The model JSON for this asset.
+     */
     public File getModel() {
         return modelJson;
     }
+
+    /**
+     * @return All the {@link TextureAsset}s for this block.
+     */
     public List<TextureAsset> getTextures() {return textures;}
+
+    /**
+     * @return The {@link Material} this asset pertains to.
+     */
     public Material getBlock() {
         return block;
     }
+
+    /**
+     * @return The file name that is used within the resource pack.
+     */
     public String getReplacementName() {return replacementName;}
+
+    /**
+     * @return If all states are replaced.
+     */
     public boolean isReplaces() {return replaces;}
 
-    public String getParentModelType() {return parentModelType;}
-
+    /**
+     * @return The folder that contains the namespaced block model resources.
+     *         Resolves to serverDir/plugins/pluginName/assets/pluginName/models/block
+     */
     public File getResourceBlockModelFolder() {return resourceBlockModelFolder;}
+
+    /**
+     * @return The folder that contains the namespaced block model resources.
+     *         Resolves to serverDir/plugins/pluginName/assets/pluginName/textures/block
+     */
     public File getResourceBlockTextureFolder() {return resourceBlockTextureFolder;}
+
+    /**
+     * @return The folder that contains the minecraft block model resources.
+     *         Resolves to serverDir/plugins/pluginName/assets/minecraft/models/block
+     */
     public File getMinecraftBlockModelFolder() {return minecraftBlockModelFolder;}
-
-    @Override
-    public void init(ResourcePackBuilder builder) throws IOException {
-        this.getMinecraftBlockModelFolder().mkdirs();
-
-        this.getResourceBlockModelFolder().mkdirs();
-        this.getResourceBlockTextureFolder().mkdirs();
-
-        //Copy the textures
-        for(TextureAsset texture : this.getTextures()) {
-            if(texture.getTextureFile() == null) continue;
-            FileUtils.copyFile(texture.getTextureFile(), new File(this.getResourceBlockTextureFolder() + "/" + texture.getTextureFile().getName()));
-        }
-    }
-
-    @Override
-    public void generate(ResourcePackBuilder builder) {
-        String fileName = this.getReplacementName() + ".json";
-
-        //Create the Minecraft model replacement file.
-        //Only do this if all states should be overwritten.
-        //------------------------------------------------
-        if(this.isReplaces()) {
-            File assetFile = new File(this.getMinecraftBlockModelFolder(), fileName);
-            try {
-                //Generate the .json for the asset with the appropriate custom model id.
-                assetFile.createNewFile();
-                JsonObject json = new JsonObjectBuilder().add("parent", this.getNamespace() + ":block/" + this.getName())
-                        .getObject();
-                //Save the JSON file.
-                write(json, assetFile);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        //------------------------------------------------
-
-        //Create or Copy the model file.
-        //------------------------------------------------
-        File customModel = new File(this.getResourceBlockModelFolder(), this.getName() + ".json");
-        if(this.getModel() == null) {
-            JsonObjectBuilder textureObject = new JsonObjectBuilder();
-            for(TextureAsset texture : this.getTextures()) {
-                //If the file is null, the texture is just whatever name they provided.
-                //If the file isn't null, we get the texture from its name.
-                if(texture.getTextureFile() == null) {
-                    textureObject.add(texture.getKey(), texture.getName());
-                } else {
-                    textureObject.add(texture.getKey(), this.getNamespace() + ":block/" + texture.getName());
-                }
-            }
-
-            JsonObject json = new JsonObjectBuilder().add("parent", this.getParentModel())
-                    .add("textures", textureObject.getObject()).getObject();
-
-            write(json, customModel);
-        } else {
-            try {
-                //Load in the provided JSON file.
-                JsonObject modelJson = new JsonParser().parse(new FileReader(this.getModel())).getAsJsonObject();
-                JsonObject textures = modelJson.get("textures").getAsJsonObject();
-
-                //Make sure the textures point to the correct .png textures.
-                for(Map.Entry<String, JsonElement> entry : textures.entrySet()) {
-                    //Remap to the custom namespace if it's not Minecraft.
-                    if(!entry.getValue().getAsString().startsWith("minecraft:")) {
-                        textures.addProperty(entry.getKey(), this.getNamespace() + ":block/" + this.getName());
-                    }
-                }
-
-                //Write the file.
-                write(modelJson, customModel);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        //------------------------------------------------
-
-    }
 }

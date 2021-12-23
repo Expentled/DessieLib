@@ -20,6 +20,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Event handlers for incoming and outgoing packets.
+ *
+ * Packeteer handlers should have a Packet and a Player as parameters.
+ */
 public class Packeteer implements Listener {
 
     private static final List<PacketListener> HANDLERS = new ArrayList<>();

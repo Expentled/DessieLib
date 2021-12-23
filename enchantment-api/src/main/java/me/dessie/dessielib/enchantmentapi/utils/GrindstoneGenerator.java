@@ -1,7 +1,7 @@
 package me.dessie.dessielib.enchantmentapi.utils;
 
-import me.dessie.dessielib.enchantmentapi.CEnchantment;
 import me.dessie.dessielib.core.events.slot.SlotEventHelper;
+import me.dessie.dessielib.enchantmentapi.CEnchantment;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.ExperienceOrb;
 import org.bukkit.Location;
@@ -11,6 +11,9 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.Random;
 
+/**
+ * Internal class used for handling custom Grindstone logic.
+ */
 public class GrindstoneGenerator {
     private static final Random random = new Random();
 

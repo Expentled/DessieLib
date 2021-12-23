@@ -1,7 +1,6 @@
 package me.dessie.dessielib.resourcepack.listeners;
 
 import com.google.common.util.concurrent.AtomicDouble;
-import me.dessie.dessielib.core.events.BlockStopDamageEvent;
 import me.dessie.dessielib.packeteer.PacketListener;
 import me.dessie.dessielib.packeteer.PacketeerHandler;
 import me.dessie.dessielib.resourcepack.ResourcePack;

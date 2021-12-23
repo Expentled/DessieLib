@@ -1,45 +1,62 @@
 package me.dessie.dessielib.particleapi.transform.transformations;
 
-import me.dessie.dessielib.particleapi.point.Point3D;
+
 import me.dessie.dessielib.particleapi.transform.ParticleTransform;
 import me.dessie.dessielib.particleapi.transform.TransformType;
 import org.bukkit.Location;
+import org.bukkit.util.Vector;
 
 import java.util.List;
 import java.util.function.BiFunction;
 
+/**
+ * Rotates the entire {@link me.dessie.dessielib.particleapi.shapes.ShapedParticle} based
+ * on the provided function.
+ */
 public class ParticleRotate extends ParticleTransform {
 
-    private Point3D offset;
+    private final Vector offset;
 
-    public ParticleRotate(TransformType type, int frames, BiFunction<Location, Integer, Point3D> transform) {
-        this(type, frames, transform, new Point3D(0, 0, 0));
+    /**
+     * @param type The {@link TransformType} of this Transformation.
+     * @param frames Over how many animation frames this transformation will be applied.
+     *               A "frame" is when the {@link me.dessie.dessielib.particleapi.animation.ParticleAnimator} renders the Particle.
+     *               The TransformType will determine how the cycle behaves once the frame cap is reached.
+     *
+     * @param transform The transformation function. Should return a {@link Vector}
+     *                  with how much to rotate on the X, Y, and Z axes.
+     */
+    public ParticleRotate(TransformType type, int frames, BiFunction<Location, Integer, Vector> transform) {
+        this(type, frames, transform, new Vector(0, 0, 0));
     }
 
-    public ParticleRotate(TransformType type, int frames, BiFunction<Location, Integer, Point3D> transform, Point3D offset) {
+    /**
+     * @param type The {@link TransformType} of this Transformation.
+     * @param frames Over how many animation frames this transformation will be applied.
+     *               A "frame" is when the {@link me.dessie.dessielib.particleapi.animation.ParticleAnimator} renders the Particle.
+     *               The TransformType will determine how the cycle behaves once the frame cap is reached.
+     *
+     * @param transform The transformation function. Should return a {@link Vector}
+     *                  with how much to rotate on the X, Y, and Z axes.
+     * @param offset A Vector with the origin offset for the rotation.
+     */
+    public ParticleRotate(TransformType type, int frames, BiFunction<Location, Integer, Vector> transform, Vector offset) {
         super(type, frames, transform);
         this.offset = offset;
     }
 
     @Override
-    public void applyToPoints(Location location, List<Point3D> points) {
-        Point3D rotateDegrees = this.apply(location);
+    public void applyToPoints(Location location, List<Vector> points) {
+        Vector rotateDegrees = this.apply(location);
 
-        for (Point3D point : points) {
-            Point3D origin = new Point3D(location.getX(), location.getY(), location.getZ()).add(this.offset);
+        for (Vector point : points) {
+            Vector origin = new Vector(location.getX(), location.getY(), location.getZ()).add(this.offset);
 
             /*
-            I'm like 99% sure doing it this way makes it so if you rotate on more than
-            one axis it rotates incorrectly.
-
-            This should still be fine for rotating on a singular axis, and perhaps chaining multiple
-            ParticleRotate will allow for a more accurate 3D rotation.
-
-            However I have no idea what I'm doing so this is gonna have to do for now!
-
-            Edit: Rotating on more than 1 axis seems to have a reasonable effect
+            May not be a perfect solution, and may have issues when
+            rotating on more than one axis.
             */
-            Point3D rotated = rotateAroundX(origin, point, rotateDegrees.getX());
+            Vector rotated = rotateAroundX(origin, point, rotateDegrees.getX());
             rotated = rotateAroundY(origin, rotated, rotateDegrees.getY());
             rotated = rotateAroundZ(origin, rotated, rotateDegrees.getZ());
 
@@ -47,27 +64,27 @@ public class ParticleRotate extends ParticleTransform {
         }
     }
 
-    private Point3D rotateAroundX(Point3D origin, Point3D point, double angle) {
+    private Vector rotateAroundX(Vector origin, Vector point, double angle) {
         double angleCos = Math.cos(Math.toRadians(angle));
         double angleSin = Math.sin(Math.toRadians(angle));
         double y = (point.getY() - origin.getY()) * angleCos - (point.getZ() - origin.getZ()) * angleSin + origin.getY();
         double z = (point.getY() - origin.getY()) * angleSin + (point.getZ() - origin.getZ()) * angleCos + origin.getZ();
-        return new Point3D(point.getX(), y, z);
+        return new Vector(point.getX(), y, z);
     }
 
-    private Point3D rotateAroundY(Point3D origin, Point3D point, double angle) {
+    private Vector rotateAroundY(Vector origin, Vector point, double angle) {
         double angleCos = Math.cos(Math.toRadians(angle));
         double angleSin = Math.sin(Math.toRadians(angle));
         double x = angleSin * (point.getZ() - origin.getZ()) + angleCos * (point.getX() - origin.getX()) + origin.getX();
         double z = angleCos * (point.getZ() - origin.getZ()) - angleSin * (point.getX() - origin.getX()) + origin.getZ();
-        return new Point3D(x, point.getY(), z);
+        return new Vector(x, point.getY(), z);
     }
 
-    private Point3D rotateAroundZ(Point3D origin, Point3D point, double angle) {
+    private Vector rotateAroundZ(Vector origin, Vector point, double angle) {
         double angleCos = Math.cos(Math.toRadians(angle));
         double angleSin = Math.sin(Math.toRadians(angle));
         double x = angleCos * (point.getX() - origin.getX()) - angleSin * (point.getY() - origin.getY()) + origin.getX();
         double y = angleSin * (point.getX() - origin.getX()) + angleCos * (point.getY() - origin.getY()) + origin.getY();
-        return new Point3D(x, y, point.getZ());
+        return new Vector(x, y, point.getZ());
     }
 }

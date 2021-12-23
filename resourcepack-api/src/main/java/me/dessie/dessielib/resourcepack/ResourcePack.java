@@ -7,13 +7,11 @@ import me.dessie.dessielib.resourcepack.assets.SoundAsset;
 import me.dessie.dessielib.resourcepack.listeners.BlockListener;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 public class ResourcePack implements PacketListener {
 
@@ -26,6 +24,11 @@ public class ResourcePack implements PacketListener {
     private final ResourcePackBuilder builder;
     private final NamespacedKey key;
 
+    /**
+     * @param zipped The zipped file of the resource pack.
+     * @param key The {@link NamespacedKey} to identify the resource pack.
+     * @param builder The {@link ResourcePackBuilder} that created this ResourcePack.
+     */
     public ResourcePack(File zipped, NamespacedKey key, ResourcePackBuilder builder) {
         this.zipped = zipped;
         this.builder = builder;
@@ -66,6 +69,19 @@ public class ResourcePack implements PacketListener {
     }
 
     /**
+     * Checks if a Player accepted or declined the resource pack.
+     * This is a shortcut for {@link me.dessie.dessielib.resourcepack.webhost.ResourcePackServer#isLoadedBy(Player)}
+     *
+     * Note: This method may return incorrect values if a /reload is ran!
+     *
+     * @param player The Player to check
+     * @return If the provided Player accepted or declined the resource pack.
+     */
+    public boolean isLoadedBy(Player player) {
+        return this.getBuilder().getResourcePackServer().isLoadedBy(player);
+    }
+
+    /**
      * @param name The path and name of the sound.
      *             Ex:
      *             entity.enderman.scream
@@ -77,19 +93,41 @@ public class ResourcePack implements PacketListener {
                 .findAny().orElse(null);
     }
 
-    public static ResourcePack getResourcePack(Plugin plugin) {
-        NamespacedKey pluginKey = new NamespacedKey(plugin, plugin.getName().toLowerCase(Locale.ROOT));
-
-        return resourcePacks.stream().filter(resourcePack -> resourcePack.getKey().equals(pluginKey)).findAny().orElse(null);
+    /**
+     * Retrieves a ResourcePack from a {@link NamespacedKey}.
+     *
+     * @param key The NamespacedKey to find the Pack for.
+     * @return The ResourcePack with the provided NamespacedKey.
+     */
+    public static ResourcePack getResourcePack(NamespacedKey key) {
+        return resourcePacks.stream().filter(resourcePack -> resourcePack.getKey().equals(key)).findAny().orElse(null);
     }
 
+    /**
+     * @return The zip file for the Resource Pack.
+     */
     public File getResourcePack() {
         return zipped;
     }
+
+    /**
+     * @return The {@link ResourcePackBuilder} for the ResourcePack.
+     */
     public ResourcePackBuilder getBuilder() {return builder;}
+
+    /**
+     * @return The {@link NamespacedKey} that identifies this pack.
+     */
     public NamespacedKey getKey() {return key;}
+
+    /**
+     * @return All registered Resource Packs
+     */
     public static List<ResourcePack> getResourcePacks() {return resourcePacks;}
 
+    /**
+     * @return The plugin that registered the ResourcePack API.
+     */
     public static JavaPlugin getPlugin() {
         return plugin;
     }
@@ -106,6 +144,9 @@ public class ResourcePack implements PacketListener {
         registered = true;
     }
 
+    /**
+     * @return If ResourcePack API has been registered.
+     */
     public static boolean isRegistered() {
         return registered;
     }

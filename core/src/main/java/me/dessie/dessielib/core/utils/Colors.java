@@ -9,7 +9,7 @@ public class Colors {
     private static final Pattern colorPattern = Pattern.compile("#[A-Fa-f0-9]{6}");
 
     /**
-     * Creates a colored message that supports both & (&f) format and HEX format. (#ffffff)
+     * Creates a colored message that supports both ampersand format and HEX format. (#ffffff)
      * @param message The message to colorize.
      * @return The colored message.
      */

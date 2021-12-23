@@ -1,14 +1,14 @@
 package me.dessie.dessielib.enchantmentapi.properties;
 
+import me.dessie.dessielib.core.events.slot.SlotEventHelper;
+import me.dessie.dessielib.core.events.slot.SlotUpdateEvent;
+import me.dessie.dessielib.core.events.slot.UpdateType;
 import me.dessie.dessielib.enchantmentapi.CEnchantment;
-import me.dessie.dessielib.enchantmentapi.CEnchantmentLoader;
+import me.dessie.dessielib.enchantmentapi.CEnchantmentAPI;
 import me.dessie.dessielib.enchantmentapi.utils.AnvilGenerator;
 import me.dessie.dessielib.enchantmentapi.utils.EnchantmentGenerator;
 import me.dessie.dessielib.enchantmentapi.utils.GrindstoneGenerator;
 import me.dessie.dessielib.enchantmentapi.utils.VillagerGenerator;
-import me.dessie.dessielib.core.events.slot.SlotEventHelper;
-import me.dessie.dessielib.core.events.slot.SlotUpdateEvent;
-import me.dessie.dessielib.core.events.slot.UpdateType;
 import net.minecraft.core.Registry;
 import net.minecraft.world.inventory.EnchantmentMenu;
 import org.bukkit.Bukkit;
@@ -31,10 +31,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Internal class for listening for specific ways to obtain/remove enchantments. (Villager Trades, Grindstone, Anvils, Enchanting Tables)
+ */
 public class PropertyListener implements Listener {
 
     @EventHandler
-    public void onVillagerAcquire(VillagerAcquireTradeEvent event) {
+    private void onVillagerAcquire(VillagerAcquireTradeEvent event) {
         //Got enchanted book, we're gonna modify that :)
         if(event.getRecipe().getResult().getType() == Material.ENCHANTED_BOOK) {
             Enchantment enchantment;
@@ -68,7 +71,7 @@ public class PropertyListener implements Listener {
     }
 
     @EventHandler
-    public void onGrindstone(SlotUpdateEvent event) {
+    private void onGrindstone(SlotUpdateEvent event) {
         //Ignore when the result is generated.
         if(event.getUpdateType() == UpdateType.RESULT_GENERATE) return;
         if(event.getInventory().getType() != InventoryType.GRINDSTONE) return;
@@ -84,7 +87,7 @@ public class PropertyListener implements Listener {
         if(event.getSlot() != 2) {
             ItemStack finalTarget = target;
             //Run a tick later, since sometimes the result could be gotten as null.
-            Bukkit.getScheduler().runTask(CEnchantmentLoader.getPlugin(), () -> {
+            Bukkit.getScheduler().runTask(CEnchantmentAPI.getPlugin(), () -> {
                 GrindstoneGenerator.doResultUpdate(event.getInventory().getItem(2), finalTarget);
             });
         } else {
@@ -104,7 +107,7 @@ public class PropertyListener implements Listener {
     }
 
     @EventHandler
-    public void onAnvil(SlotUpdateEvent event) {
+    private void onAnvil(SlotUpdateEvent event) {
         if(event.getInventory().getType() != InventoryType.ANVIL) return;
         //Ignore updating of the result slot
         if(event.getSlot() == 2) return;
@@ -115,10 +118,10 @@ public class PropertyListener implements Listener {
         if(!SlotEventHelper.isNullOrAir(result)) {
             Set<CEnchantment> allEnchantments = AnvilGenerator.getEnchantmentsToAdd(event.getPlayer(), target, sacrifice);
 
-            //Remove the conflicting vanilla me.dessie.dessielib.enchantments
+            //Remove the conflicting vanilla me.dessie.dessielib.experimental.enchantments
             AnvilGenerator.removeConflictingVanilla(target, sacrifice, result);
 
-            //Clear all the current me.dessie.dessielib.enchantments.
+            //Clear all the current me.dessie.dessielib.experimental.enchantments.
             for(CEnchantment enchantment : allEnchantments) {
                 enchantment.removeEnchantment(result, false);
             }
@@ -127,7 +130,7 @@ public class PropertyListener implements Listener {
             int cost = AnvilGenerator.doAnvilEnchant(event.getPlayer(), allEnchantments, target, sacrifice, result);
 
             //Add the cost to the current cost.
-            Bukkit.getScheduler().runTask(CEnchantmentLoader.getPlugin(), () -> {
+            Bukkit.getScheduler().runTask(CEnchantmentAPI.getPlugin(), () -> {
                 AnvilInventory inventory = (AnvilInventory) event.getInventory();
                 inventory.setRepairCost(inventory.getRepairCost() + cost);
             });
@@ -140,10 +143,10 @@ public class PropertyListener implements Listener {
             //Gets the CEnchantments to add to the target.
             Set<CEnchantment> allEnchantments = AnvilGenerator.getEnchantmentsToAdd(event.getPlayer(), target, sacrifice);
 
-            //Remove the conflicting vanilla me.dessie.dessielib.enchantments
+            //Remove the conflicting vanilla me.dessie.dessielib.experimental.enchantments
             AnvilGenerator.removeConflictingVanilla(target, sacrifice, result);
 
-            //Remove all current me.dessie.dessielib.enchantments
+            //Remove all current me.dessie.dessielib.experimental.enchantments
             for(CEnchantment enchantment : allEnchantments) {
                 enchantment.removeEnchantment(result, false);
             }
@@ -153,7 +156,7 @@ public class PropertyListener implements Listener {
             event.getInventory().setItem(2, result);
 
             //Add the cost to the current cost.
-            Bukkit.getScheduler().runTask(CEnchantmentLoader.getPlugin(), () -> {
+            Bukkit.getScheduler().runTask(CEnchantmentAPI.getPlugin(), () -> {
                 AnvilInventory inventory = (AnvilInventory) event.getInventory();
                 inventory.setRepairCost(inventory.getRepairCost() + cost);
             });
@@ -162,7 +165,7 @@ public class PropertyListener implements Listener {
 
 
     @EventHandler
-    public void onEnchant(EnchantItemEvent event) {
+    private void onEnchant(EnchantItemEvent event) {
         //Get which enchantment they clicked, we don't want to remove the enchantment that they got guaranteed.
         //This is just done by accessing the EnchantmentTable's offers through NMS and grabbing the enchantment ID.
 
@@ -179,16 +182,16 @@ public class PropertyListener implements Listener {
         if(clicked == null) return;
         Enchantment finalClicked = clicked;
 
-        //Remove all me.dessie.dessielib.enchantments except the guaranteed one
+        //Remove all me.dessie.dessielib.experimental.enchantments except the guaranteed one
         event.getEnchantsToAdd().keySet().removeIf(ench -> ench != finalClicked);
 
         //Get modified power.
         int modifiedPower = EnchantmentGenerator.getModifiedPower(event.getItem(), event.getExpLevelCost());
 
-        //Get all possible me.dessie.dessielib.enchantments for this item
+        //Get all possible me.dessie.dessielib.experimental.enchantments for this item
         Map<Enchantment, Integer> possibleEnchantments = EnchantmentGenerator.getPossibleEnchantments(event.getItem(), clicked, modifiedPower);
 
-        //Choose me.dessie.dessielib.enchantments and then apply them
+        //Choose me.dessie.dessielib.experimental.enchantments and then apply them
         List<Enchantment> chosen = EnchantmentGenerator.chooseEnchantments(new ArrayList<>(possibleEnchantments.keySet()), clicked, modifiedPower);
 
         for(Enchantment enchantment : chosen) {

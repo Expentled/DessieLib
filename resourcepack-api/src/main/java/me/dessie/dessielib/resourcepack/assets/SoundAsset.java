@@ -1,8 +1,8 @@
 package me.dessie.dessielib.resourcepack.assets;
 
-import me.dessie.dessielib.resourcepack.ResourcePackBuilder;
 import me.dessie.dessielib.core.utils.json.JsonArrayBuilder;
 import me.dessie.dessielib.core.utils.json.JsonObjectBuilder;
+import me.dessie.dessielib.resourcepack.ResourcePackBuilder;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.bukkit.SoundCategory;
@@ -22,6 +22,18 @@ public class SoundAsset extends Asset {
     private boolean stream;
 
     private final File resourceSoundsFolder;
+
+    /**
+     * @param path The path name for the sound file.
+     *             Examples:
+     *             entity.enderman
+     *             block.sand
+     * @param source The SoundSource this sound plays from
+     * @param soundFile The .ogg file to play when this sound is played.
+     */
+    public SoundAsset(String path, SoundCategory source, File soundFile) {
+        this(path, source, false, soundFile);
+    }
 
     /**
      *
@@ -47,63 +59,81 @@ public class SoundAsset extends Asset {
         this.path = path;
         this.soundFile = soundFile;
         this.category = source;
-    }
 
-    public SoundAsset(String path, SoundCategory source, File soundFile) {
-        this(path, source, false, soundFile);
-    }
+        this.setGenerator(new AssetGenerator() {
+            @Override
+            public void init(ResourcePackBuilder builder, List<Asset> assetList) throws IOException {
+                List<SoundAsset> assets = this.cast(SoundAsset.class, assetList);
 
-    public boolean isStreamed() {
-        return stream;
-    }
-    public SoundCategory getCategory() { return category; }
+                for(SoundAsset asset : assets) {
+                    this.createDirectories(asset.getResourceSoundsFolder());
 
-    public File getSoundFile() {return soundFile;}
-    public String getPath() {return path;}
-    public File getResourceSoundsFolder() {return resourceSoundsFolder;}
+                    String assetPath = asset.getPath().replace(".", "/");
+                    //Copy the given Sound File to the proper path.
+                    try {
+                        FileUtils.copyFile(asset.getSoundFile(), new File(asset.getResourceSoundsFolder() + "/" + assetPath + "/" + asset.getSoundFile().getName()));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
 
-    @Override
-    public void init(ResourcePackBuilder builder) {
-        this.getResourceSoundsFolder().mkdirs();
+            @Override
+            public void generate(ResourcePackBuilder builder, List<Asset> assetList) throws IOException {
+                List<SoundAsset> assets = this.cast(SoundAsset.class, assetList);
 
-        String assetPath = this.getPath().replace(".", "/");
-        //Copy the given Sound File to the proper path.
-        try {
-            FileUtils.copyFile(this.getSoundFile(), new File(this.getResourceSoundsFolder() + "/" + assetPath + "/" + this.getSoundFile().getName()));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+                JsonObjectBuilder object = new JsonObjectBuilder();
+
+                Map<String, List<SoundAsset>> sounds = new HashMap<>();
+                builder.getAssetsOf(SoundAsset.class).forEach(sound -> {
+                    sounds.putIfAbsent(sound.getPath(), new ArrayList<>());
+                    sounds.get(sound.getPath()).add(sound);
+                });
+
+                for(String path : sounds.keySet()) {
+                    JsonArrayBuilder array = new JsonArrayBuilder();
+                    for(SoundAsset asset : sounds.get(path)) {
+                        String assetPath = asset.getPath().replace(".", "/");
+                        object.add(asset.getPath(),
+                                new JsonObjectBuilder().add("sounds", array
+                                        .add(new JsonObjectBuilder()
+                                                .add("name", asset.getNamespace() + ":" + assetPath + "/" + asset.getName())
+                                                .add("stream", asset.isStreamed()).getObject())
+                                        .getArray()).getObject());
+                    }
+                }
+                assets.stream().findAny().ifPresent(asset -> {
+                    write(object.getObject(), new File(asset.getNamespaceFolder() + "/sounds.json"));
+                });
+            }
+        });
     }
 
     /**
-     * Generates the sounds.json file to create all the custom Sounds for the resourcepack.
-     * Also copies the sound files into their respective directories.
+     * @return If the sound asset is streamed.
      */
-    @Override
-    public void generate(ResourcePackBuilder builder) {
-        JsonObjectBuilder object = new JsonObjectBuilder();
-
-        Map<String, List<SoundAsset>> sounds = new HashMap<>();
-        builder.getAssetsOf(SoundAsset.class).forEach(sound -> {
-            sounds.putIfAbsent(sound.getPath(), new ArrayList<>());
-            sounds.get(sound.getPath()).add(sound);
-
-            //Set all Assets as generated, since we only want this to run once.
-            sound.setGenerated(true);
-        });
-
-        for(String path : sounds.keySet()) {
-            JsonArrayBuilder array = new JsonArrayBuilder();
-            for(SoundAsset asset : sounds.get(path)) {
-                String assetPath = asset.getPath().replace(".", "/");
-                object.add(asset.getPath(),
-                        new JsonObjectBuilder().add("sounds", array
-                                .add(new JsonObjectBuilder()
-                                        .add("name", this.getNamespace() + ":" + assetPath + "/" + asset.getName())
-                                        .add("stream", asset.isStreamed()).getObject())
-                                .getArray()).getObject());
-            }
-        }
-        write(object.getObject(), new File(this.getNamespaceFolder() + "/sounds.json"));
+    public boolean isStreamed() {
+        return stream;
     }
+
+    /**
+     * @return The {@link SoundCategory} that this sound will play from.
+     */
+    public SoundCategory getCategory() { return category; }
+
+    /**
+     * @return The File to the .ogg
+     */
+    public File getSoundFile() {return soundFile;}
+
+    /**
+     * @return The path that is used to play this sound in game.
+     */
+    public String getPath() {return path;}
+
+    /**
+     * @return The folder that contains the namespaced sound resources.
+     *         Resolves to serverDir/plugins/pluginName/assets/pluginName/sounds
+     */
+    public File getResourceSoundsFolder() {return resourceSoundsFolder;}
 }

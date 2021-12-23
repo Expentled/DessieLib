@@ -1,16 +1,30 @@
 package me.dessie.dessielib.particleapi.collison;
 
-import me.dessie.dessielib.particleapi.ShapedParticle;
-import me.dessie.dessielib.particleapi.point.Point3D;
+import me.dessie.dessielib.particleapi.shapes.ShapedParticle;
 import org.bukkit.World;
+import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
-public abstract class ParticleCollider {
+/**
+ *
+ * Calls consumers when a {@link ShapedParticle}'s particle collides with something in the world.
+ *
+ * @see BlockCollider
+ * @see EntityCollider
+ *
+ * If creating a custom collider, extend this class and override {@link ParticleCollider#attemptCollide(ShapedParticle, World, List)}
+ *
+ * @param <T> Any object within the Minecraft world that could be collided with.
+ */
+public abstract class ParticleCollider<T> {
     private int delay;
+
+    private Consumer<T> collider;
 
     //Determines if this Collider can activate an infinite amount of times per tick.
     //If it's false, an Object will only be collided with a maximum one time per frame.
@@ -20,38 +34,90 @@ public abstract class ParticleCollider {
 
     //Keeps track of the current frame collisions.
     //Is not used if multiCollide is true.
-    private List<Object> frameCollisions;
+    private List<T> frameCollisions;
 
-    private final Map<Object, Integer> delays = new HashMap<>();
+    private final Map<T, Integer> delays = new HashMap<>();
 
-    public ParticleCollider(int delay) {
-        this(delay, false);
+    /**
+     * @param collider A consumer for what to do when a particle collides with the object.
+     * @param delay How much time, in ticks, to wait between each collision event.
+     *              For example, if this is 60, the collider will only be called for the same object every 3 seconds.
+     */
+    public ParticleCollider(Consumer<T> collider, int delay) {
+        this(collider, delay, false);
     }
 
-    public ParticleCollider(int delay, boolean multiCollide) {
+    /**
+     * @param collider A consumer for what to do when a particle collides with the object.
+     * @param delay How much time, in ticks, to wait between each collision event.
+     *              For example, if this is 60, the collider will only be called for the same object every 3 seconds.
+     * @param multiCollide If multiple particles can collide with the same object per tick. (Meaning multiple calls to the consumer)
+     */
+    public ParticleCollider(Consumer<T> collider, int delay, boolean multiCollide) {
+        this.collider = collider;
         this.delay = delay;
         this.multiCollide = multiCollide;
     }
 
+    /**
+     * @return The amount of ticks between each call to the collision consumer for the same object.
+     */
     public int getDelay() {
         return delay;
     }
 
+    /**
+     * @return If multiple particles can collide with the same object per tick.
+     */
     public boolean isMultiCollide() {
         return multiCollide;
     }
 
-    public ParticleCollider setMultiCollide(boolean multiCollide) {
+    /**
+     * @return The consumer that is applied when there is a collision.
+     */
+    public Consumer<T> getCollider() {
+        return collider;
+    }
+
+    /**
+     * @param collider Sets the consumer for what is applied when a particle collides with a block.
+     * @return The ParticleCollider instance.
+     */
+    public ParticleCollider<T> setCollider(Consumer<T> collider) {
+        this.collider = collider;
+        return this;
+    }
+
+    /**
+     * @param multiCollide Sets if multiple particles can collide with the same object per tick.
+     * @return The ParticleCollider instance.
+     */
+    public ParticleCollider<T> setMultiCollide(boolean multiCollide) {
         this.multiCollide = multiCollide;
         return this;
     }
 
-    public ParticleCollider setDelay(int delay) {
+    /**
+     * @param delay Sets the amount of ticks between each call to the collision consumer for the same object.
+     * @return The ParticleCollider instance.
+     */
+    public ParticleCollider<T> setDelay(int delay) {
         this.delay = delay;
         return this;
     }
 
-    protected void add(Object object) {
+    /**
+     * If you're writing your own Colliders for an object, you'll need to override this method.
+     * To call your Consumer, you can use {@link Consumer#accept(Object)}
+     *
+     * @param particle The {@link ShapedParticle} that was rendered and could collide with something.
+     * @param world The world that the ShapedParticle was rendered in.
+     * @param points A list of particle locations within the rendered ShapedParticle.
+     */
+    protected abstract void attemptCollide(ShapedParticle particle, World world, List<Vector> points);
+
+    protected void add(T object) {
         delays.put(object, this.getDelay());
 
         //Add this Object to the frame collision.
@@ -60,13 +126,13 @@ public abstract class ParticleCollider {
         }
     }
 
-    protected boolean canCollide(Object object) {
+    protected boolean canCollide(T object) {
         return !delays.containsKey(object) && (!this.isMultiCollide() && !frameCollisions.contains(object));
     }
 
     protected void doDelayCalculate(ShapedParticle particle) {
         //Decrement the Collision Delay for all entities by the Particle's Animation Speed.
-        for(Object object : delays.keySet()) {
+        for(T object : delays.keySet()) {
             delays.compute(object, ((object1, delay) -> delay -= particle.getAnimator().getAnimationSpeed()));
         }
 
@@ -74,12 +140,10 @@ public abstract class ParticleCollider {
         delays.entrySet().removeIf(entry -> entry.getValue() <= 0);
     }
 
-    public void startCollide(ShapedParticle particle, World world, List<Point3D> points) {
+    public void startCollide(ShapedParticle particle, World world, List<Vector> points) {
         this.doDelayCalculate(particle);
         this.frameCollisions = new ArrayList<>();
 
         this.attemptCollide(particle, world, points);
     }
-
-    protected abstract void attemptCollide(ShapedParticle particle, World world, List<Point3D> points);
 }

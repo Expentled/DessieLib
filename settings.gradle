@@ -1,11 +1,11 @@
 rootProject.name = 'dessielib'
 
-include 'experimental'
+include 'core'
 include 'inventory-api'
 include 'particle-api'
 include 'scoreboard-api'
 include 'resourcepack-api'
 include 'packeteer'
 include 'enchantment-api'
-include 'core'
+include 'experimental'
 

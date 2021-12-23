@@ -8,14 +8,22 @@ A generic Spigot API for making life easier
 
 ### :package: Installation / Download
 
+To depend on DessieLib with a build manager, you'll need to also authenticate to GitHub Packages.
+
+This involves generating an access token from [GitHub](https://github.com/settings/tokens)
+
 #### Gradle
 ```groovy
 maven {
   url "https://maven.pkg.github.com/dessie0/dessielib"
+  credentials {
+    username = "<your_github_username>"
+    password = "<your_github_token>"
+  }
 }
 
 dependencies {
-  compileOnly 'me.dessie:dessielib:1.1.2'
+  compileOnly 'me.dessie.dessielib:dessielib:1.2.0'
 }
 ```
 
@@ -23,9 +31,9 @@ dependencies {
 ```xml
 <dependencies>
   <dependency>
-    <groupId>me.dessie</groupId>
+    <groupId>me.dessie.dessielib</groupId>
     <artifactId>dessielib</artifactId>
-    <version>1.1.2</version>
+    <version>1.2.0</version>
   </dependency>
 </dependencies>
 ```
@@ -36,7 +44,7 @@ The complete JavaDocs can be found [here](https://dessie0.github.io/DessieLib/) 
 
 ### :iphone: Features
 
-DessieLib provides two main features that are cumbersome in CraftBukkit and Spigot, but easily contained within DessieLib.
+DessieLib provides many features that are cumbersome in CraftBukkit and Spigot, but easily contained within DessieLib.
 
 - `InventoryAPI` is a powerful way to manage inventories without having to mess with events
 - `ScoreboardAPI` used to create organized tablists & scoreboards without the hassle of dealing with teams.
@@ -49,7 +57,7 @@ DessieLib provides two main features that are cumbersome in CraftBukkit and Spig
 <summary>Basic InventoryAPI Usage</summary>
 
 ```java
-public class me.dessie.dessielib.me.dessie.dessielib.Main extends JavaPlugin implements CommandExecutor {
+public class Main extends JavaPlugin implements CommandExecutor {
 
     @Override
     public void onEnable() {
@@ -109,7 +117,7 @@ public class me.dessie.dessielib.me.dessie.dessielib.Main extends JavaPlugin imp
 <summary>Basic ScoreboardAPI Usage</summary>
 
 ```java
-public class me.dessie.dessielib.me.dessie.dessielib.Main extends JavaPlugin implements Listener {
+public class Main extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
@@ -198,9 +206,226 @@ public class me.dessie.dessielib.me.dessie.dessielib.Main extends JavaPlugin imp
 
 </details>
 
+<details>
+<summary>Basic ParticleAPI Usage</summary>
+
+```java
+public class Main extends JavaPlugin implements CommandExecutor {
+
+    @Override
+    public void onEnable() {
+        //Register the API
+        ParticleAPI.register(this);
+    }
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if(command.getName().equalsIgnoreCase("testparticle") && sender instanceof Player player) {
+
+            //Create the CircleParticle with green Redstone, 50 particles and a radius of 2.
+            CircleParticle particle = new CircleParticle(new ParticleData(Particle.REDSTONE, new Particle.DustOptions(Color.fromRGB(0, 255, 0), 1))
+                    , 50, 2);
+
+            //Make the Particle animator forever (since 0 loops), and follow the player with a y offset.
+            particle.setAnimator(new EntityFollowAnimation(player, 5, new Vector(0, 1, 0)));
+
+            //Add a Block collider, such that when particles collide with blocks, they fly into the air
+            particle.addCollider(new BlockCollider(block -> {
+                FallingBlock fallingBlock = block.getWorld().spawnFallingBlock(block.getLocation().add(0.5, 0, 0.5), block.getBlockData());
+                fallingBlock.setVelocity(new Vector(0, 2, 0));
+
+                block.setType(Material.AIR);
+            }, 5, false));
+
+            //Slowly oscillate the circle to be bigger and smaller.
+            particle.addTransform(new ParticleScale(TransformType.OSCILLATE, 10, (location, step) -> {
+                return new Vector(step * 0.05, 0, step * 0.05);
+            }));
+
+            //Finally, display the particle to all players.
+            particle.display(player.getLocation().add(0, 1,0));
+
+            return true;
+        }
+        return false;
+    }
+}
+
+```
+
+</details>
+
+<details>
+<summary>Basic EnchantmentAPI Usage</summary>
+
+```java
+public class Main extends JavaPlugin implements CommandExecutor {
+
+    private CEnchantment soulbound;
+
+    @Override
+    public void onEnable() {
+        //Register the API
+        CEnchantmentAPI.register(this);
+
+        soulbound = new CEnchantment("Soulbound") //Instantiate the enchantment.
+                .setMaxLevel(1) //Set the max level to 1.
+                .setDisplayName("&6Soulbound") //Set how the lore is displayed.
+                .setEnchantmentActivator(new EnchantmentActivator(Activator.ALL)) //Enchantment will always trigger, since it doesn't matter where it is in their inventory when they die.
+                .setEnchantmentTarget(EnchantmentTarget.ALL) //Can be enchanted to all tools, armor and bows/crossbows.
+                .addEnchantables(Material.FLOWER_POT) //We'll also allow Flower Pots to be enchanted with it
+                .setCursed(false) //It's not a curse
+                .setUsesRomanNumerals(false) // Use numbers instead of roman numerals
+                .setEnchantProperties(new CEnchantProperties()
+                        .setAsNormalEnchant() // Sets properties such that they're similar to default enchantments.
+                        .setCanBeOnBook(false) //However, we can then say it cannot be on a book
+                        .setCanEnchantWithTable(false)) // And cannot be enchanted using the enchanting table.
+
+                //Add the logic for the enchantment.
+                //This is executed when a Player dies.
+                .onDeath((event, result) -> { 
+                    if(!(event instanceof PlayerDeathEvent)) return;
+                    event.getDrops().remove(result.getItem());
+
+                    int slot = -1;
+                    PlayerInventory inventory = ((Player) event.getEntity()).getInventory();
+                    for(int i = 0; i < 41; i++) {
+                        if(SlotEventHelper.isNullOrAir(inventory.getItem(i))) continue;
+                        if(inventory.getItem(i).equals(result.getItem())) {
+                            slot = i;
+                            break;
+                        }
+                    }
+
+                    int finalSlot = slot;
+                    Bukkit.getScheduler().runTaskLater(this, () -> {
+                        if (finalSlot == -1) return;
+                        if (!SlotEventHelper.isNullOrAir(inventory.getItem(finalSlot))) {
+                            inventory.addItem(result.getItem());
+                        } else {
+                            inventory.setItem(finalSlot, result.getItem());
+                        }
+                    }, 2);
+                }); 
+    }
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if(command.getName().equalsIgnoreCase("cenchant") && sender instanceof Player player) {
+            soulbound.enchant(player.getInventory().getItemInMainHand(), 1);
+        }
+        return false;
+    }
+}
+```
+
+</details>
+
+<details>
+<summary>Basic ResourcePack API Usage</summary>
+
+```java
+public class Main extends JavaPlugin {
+
+    private ResourcePack pack;
+    
+    @Override
+    public void onEnable() {
+        //Register the API
+        ResourcePack.register(this);
+
+        pack = new ResourcePackBuilder()
+                .setIcon(new File(this.getDataFolder() + "/pack.png")) // Set the pack icon
+                .setDescription("A test resource pack!") // Set the pack description
+                .setDisplayName("&5Dessie's Pack") // Set the name of the pack
+
+                //Add an asset so all sand looks like amethyst blocks
+                .addAsset(new BlockAsset("crystal_sand", Material.SAND, null, new TextureAsset("all", Material.AMETHYST_BLOCK)))
+
+                //Add a state specific asset, where a note block with the note of 3 looks like gold.
+                .addAsset(new BlockStateAsset("golden_note_block", Material.NOTE_BLOCK, Material.GOLD_BLOCK)
+                        .addPredicate("note", "3")
+                        .addDrops(new ItemStack(Material.GOLD_BLOCK)) //If broken, it drops a gold block
+
+                        //We then can add an event listener that triggers when the player right clicks this block
+                        .addEventListener(PlayerInteractEvent.class, (asset, event) -> {
+                            return event.getAction() == Action.RIGHT_CLICK_BLOCK && asset.blockMatches(event.getClickedBlock());
+                        }, (event) -> {
+                            //You can then use the event to do whatever you want
+                            event.setCancelled(true);
+                            event.getPlayer().sendMessage("No changing the golden one!");
+                        })
+                        //Make the block extremely difficult to destroy
+                        .setStrength(100)
+                        //Diamond and Netherite Pickaxe will mine it faster
+                        .addPreferredItems(Material.DIAMOND_PICKAXE, Material.NETHERITE_PICKAXE)
+
+                        //The gold block only drops if a diamond or netherite pickaxe is used.
+                        .setPreferredItemRequiredToDrop(true))
+
+                //Makes the Heart of the Sea ItemStack look like a gold ingot
+                .addAsset(new ItemAsset(new File(this.getDataFolder() + "/textures/gold_ingot.png"), new ItemStack(Material.HEART_OF_THE_SEA)))
+                //Creates a unicode asset that renders the apple
+                .addAsset(new BitmapUnicodeAsset("apple", Material.APPLE))
+                //Create the webhost for the pack so players receive it when they join.
+                .createWebhost("localhost", 8080, true).build();
+    }
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if(command.getName().equalsIgnoreCase("testresource") && sender instanceof Player player) {
+
+            //Look for all the ItemAssets in the pack, and give the Player it's ItemStack
+            for(ItemAsset asset : this.getPack().getBuilder().getAssetsOf(ItemAsset.class)) {
+                player.getInventory().addItem(asset.getItem());
+            }
+
+            //Look for all the Bitmap assets and send the unicode to the player.
+            for(BitmapUnicodeAsset asset : this.getPack().getBuilder().getAssetsOf(BitmapUnicodeAsset.class)) {
+                player.sendMessage(String.valueOf((char) asset.getUnicode()));
+            }
+            return true;
+        }
+        return false;
+    }
+
+    public ResourcePack getPack() {
+        return pack;
+    }
+}
+```
+
+</details>
+
+<details>
+<summary>Basic Packeteer Usage</summary>
+
+```java
+public class Main extends JavaPlugin implements PacketListener {
+
+    @Override
+    public void onEnable() {
+        //Register Packeteer
+        Packeteer packeteer = Packeteer.register(this);
+        packeteer.addListener(this); // Register the listener
+    }
+
+    @PacketeerHandler
+    public void onPickup(ServerboundPickItemPacket packet, Player player) {
+        //Now we can just use the packet as we would a normal event.
+        //This event will fire if the player middle clicks an item that is in their inventory.
+        Bukkit.getLogger().info(player.getName() + " picked item in slot " + packet.getSlot());
+    }
+}
+
+```
+
+</details>
+
 DessieLib also features small API elements such as
 - `ConfigManager`, which is used for basic external configuration loading
 - `Base64`, which can read and write Base64 strings into `ItemStack`s or `List<ItemStack>`
 - `LoopedRunnable` which will run a BukkitRunnable a set number of times before automatically stopping.
 - `SoundUtil` which can grab the Break/Place sound of specific blocks.
+- `Colors` which can parse both & and HEX formats.
  

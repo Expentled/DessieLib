@@ -10,12 +10,18 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.*;
 
+/**
+ * Internal class used for handling custom Enchanting Table logic.
+ */
 public class EnchantmentGenerator {
 
     private static Random random = new Random();
 
     /**
      * Does the random math for generating an Enchantment level.
+     *
+     * @param itemstack The {@link ItemStack} to enchant.
+     * @param base The enchanting cost of the enchantment. (1 - 30)
      * @return The modified power for this enchant
      */
     public static int getModifiedPower(ItemStack itemstack, int base) {
@@ -29,7 +35,7 @@ public class EnchantmentGenerator {
     public static Map<Enchantment, Integer> getPossibleEnchantments(ItemStack item, Enchantment clickedEnchantment, int modifiedPower) {
         Map<Enchantment, Integer> enchantments = new HashMap<>();
 
-        //Add all the possible Vanilla me.dessie.dessielib.enchantments.
+        //Add all the possible Vanilla enchantments.
         for(Enchantment enchantment : Enchantment.values()) {
             //Enchantment is already granted, because that was the offer.
             if(enchantment == clickedEnchantment) continue;
@@ -121,7 +127,7 @@ public class EnchantmentGenerator {
             //Update probability
             probability = random.nextDouble();
 
-            //Remove conflicting me.dessie.dessielib.enchantments from the possible
+            //Remove conflicting me.dessie.dessielib.experimental.enchantments from the possible
             possible.removeIf(possibleEnch -> chosen.stream().anyMatch(chosenEnch -> CEnchantment.conflictsWith(possibleEnch, chosenEnch)));
 
             //Update modified power

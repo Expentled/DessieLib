@@ -10,13 +10,16 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Internal class used for handling custom Anvil logic.
+ */
 public class AnvilGenerator {
 
     public static void removeConflictingVanilla(ItemStack target, ItemStack sacrifice, ItemStack result) {
-        //Gets the conflicting vanilla me.dessie.dessielib.enchantments
+        //Gets the conflicting vanilla enchantments
         Set<Enchantment> badVanillaEnchantments = getConflictingVanilla(target, sacrifice);
 
-        //Remove the conflicting vanilla me.dessie.dessielib.enchantments
+        //Remove the conflicting vanilla enchantments
         for(Enchantment enchantment : badVanillaEnchantments) {
             result.removeEnchantment(enchantment);
         }
@@ -53,12 +56,12 @@ public class AnvilGenerator {
 
         enchantments.addAll(CEnchantment.getEnchantments(target));
 
-        //Make sure to only add sacrifice me.dessie.dessielib.enchantments if they don't conflict with the target me.dessie.dessielib.enchantments.
+        //Make sure to only add sacrifice enchantments if they don't conflict with the target enchantments.
         enchantments.addAll(CEnchantment.getEnchantments(sacrifice).stream().filter(ench ->
                 !ench.conflictsWith(target) && !CEnchantment.getEnchantments(target).stream().anyMatch(targetEnch -> targetEnch.conflictsWith(sacrifice)))
                 .collect(Collectors.toSet()));
 
-        //Remove any me.dessie.dessielib.enchantments that can't be added to the target.
+        //Remove any enchantments that can't be added to the target.
         if(player.getGameMode() != GameMode.CREATIVE) {
             enchantments.removeIf(enchantment -> !enchantment.canEnchantItem(target));
         }

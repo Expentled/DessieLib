@@ -12,8 +12,11 @@ public class TextureAsset {
     private File textureFile;
 
     /**
-     *
      * @param key The texture key
+     *            For example, full blocks (such as dirt) have a key of "all".
+     *            To find the keys for the block you're texturing, you may need to
+     *            look within the vanilla resource pack.
+     *
      * @param texture The custom texture file, points to a custom texture that is copied into assets/custom/textures/block/ folder.
      */
     public TextureAsset(String key, File texture) {
@@ -24,6 +27,14 @@ public class TextureAsset {
         this.textureFile = texture;
     }
 
+    /**
+     *
+     * @param key The texture key
+     *            For example, full blocks (such as dirt) have a key of "all".
+     *            To find the keys for the block you're texturing, you may need to
+     *            look within the vanilla resource pack.
+     * @param material A {@link Material} to use as the Texture.
+     */
     public TextureAsset(String key, Material material) {
         this.key = key;
         this.name = "minecraft:block/" + material.name().toLowerCase(Locale.ROOT);
@@ -34,6 +45,9 @@ public class TextureAsset {
 
     /**
      * @param key The texture key
+     *            For example, full blocks (such as dirt) have a key of "all".
+     *            To find the keys for the block you're texturing, you may need to
+     *            look within the vanilla resource pack.
      * @param texture The texture value, useful if you want to reference a vanilla texture such as "minecraft:block/dirt"
      */
     public TextureAsset(String key, String texture) {

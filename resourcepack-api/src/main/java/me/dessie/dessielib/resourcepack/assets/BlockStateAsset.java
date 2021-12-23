@@ -1,8 +1,8 @@
 package me.dessie.dessielib.resourcepack.assets;
 
+import me.dessie.dessielib.core.utils.json.JsonObjectBuilder;
 import me.dessie.dessielib.resourcepack.ResourcePack;
 import me.dessie.dessielib.resourcepack.ResourcePackBuilder;
-import me.dessie.dessielib.core.utils.json.JsonObjectBuilder;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.item.DiggerItem;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
@@ -24,6 +24,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
@@ -182,29 +183,161 @@ public class BlockStateAsset extends Asset implements Listener {
                 }
             }
         }), EventPriority.HIGHEST);
+
+        this.setGenerator(new AssetGenerator() {
+            @Override
+            public void init(ResourcePackBuilder builder, List<Asset> assetList) throws IOException {
+                List<BlockStateAsset> assets = this.cast(BlockStateAsset.class, assetList);
+
+                assets.stream().findAny().ifPresent(asset -> {
+                    this.createDirectories(asset.getMinecraftBlockStatesFolder());
+                });
+            }
+
+            @Override
+            public void generate(ResourcePackBuilder builder, List<Asset> assetList) throws IOException {
+                List<BlockStateAsset> assets = this.cast(BlockStateAsset.class, assetList);
+
+                for(BlockStateAsset asset : assets) {
+                    //Get all the BlockState assets that are in this file.
+                    List<BlockStateAsset> toGenerate = builder.getAssetsOf(BlockStateAsset.class)
+                            .stream()
+                            .filter(generate -> asset.getReplacementName().equals(generate.getReplacementName()))
+                            .collect(Collectors.toList());
+
+                    //Create the BlockState file.
+                    String fileName = asset.getReplacementName() + ".json";
+                    File blockStateFile = new File(asset.getMinecraftBlockStatesFolder(), fileName);
+
+                    JsonObjectBuilder object = new JsonObjectBuilder();
+
+                    for(BlockStateAsset generate : toGenerate) {
+                        StringBuilder state = new StringBuilder();
+                        for(String key : generate.getPredicates().keySet()) {
+                            state.append(key).append("=").append(generate.getPredicates().get(key)).append(",");
+                        }
+                        //Delete the trailing comma
+                        if(state.length() > 0) {
+                            state.delete(state.length() - 1, state.length());
+                        }
+
+                        JsonObjectBuilder property = new JsonObjectBuilder();
+
+                        //Add all the properties.
+                        property.add("model", generate.getModel());
+
+                        for(String key : generate.getProperties().keySet()) {
+                            Object value = generate.getProperties().get(key);
+                            if(value instanceof String) {
+                                property.add(key, (String) value);
+                            }
+                            if(value instanceof Number) {
+                                property.add(key, (Number) value);
+                            }
+
+                            if(value instanceof Boolean) {
+                                property.add(key, (Boolean) value);
+                            }
+
+                            if(value instanceof Character) {
+                                property.add(key, (Character) value);
+                            }
+                        }
+                        object.add(state.toString(), property.getObject());
+                    }
+
+                    write(new JsonObjectBuilder().add("variants", object.getObject()).getObject(), blockStateFile);
+                }
+            }
+        });
     }
 
+    /**
+     * @return The name of the file to use within the resource pack.
+     */
     public String getReplacementName() {return replacementName;}
+
+    /**
+     * @return The vanilla predicates that must be met for this state to be valid.
+     */
     public Map<String, String> getPredicates() {return predicates;}
+
+    /**
+     * @return The properties for this state asset.
+     */
     public Map<String, Object> getProperties() {return properties;}
 
+    /**
+     * @return The custom strength for this block.
+     *         Strength is used when determining how long a block should take to mine.
+     */
     public double getStrength() {return strength;}
+
+    /**
+     * @return What {@link ItemStack} the block should drop.
+     */
     public List<ItemStack> getDrops() {return drops;}
+
+    /**
+     * @return Which {@link Material}s are preferred when breaking this block.
+     */
     public List<Material> getPreferredItems() {return preferredItems;}
+
+    /**
+     * @return If a preferred material must be used to get drops from this block.
+     */
     public boolean isPreferredItemRequiredForDrop() {return preferredItemRequiredForDrop;}
 
+    /**
+     * @return The folder that contains the minecraft block state resources.
+     *         Resolves to serverDir/plugins/pluginName/assets/minecraft/blockstates
+     */
     public File getMinecraftBlockStatesFolder() {return minecraftBlockStatesFolder;}
+
+    /**
+     * @return The String reference to the model texture.
+     *         For example,
+     *         minecraft:block/anvil
+     *         dessielib:block/custom_block
+     */
     public String getModel() {return model;}
 
+    /**
+     * @param item The {@link ItemStack} that is being used to break the block.
+     * @param player The {@link Player} that is breaking the block.
+     * @return How quickly the player can mine the block with that ItemStack.
+     */
     public double getBreakSpeed(ItemStack item, Player player) {
         return this.breakSpeedFunction.apply(item, player);
     }
 
+    /**
+     * Adds a predicate that is used to determine when this asset should be applied
+     * to the material. Blocks have different types of predicates that can be used.
+     *
+     * You may need to reference the internal Minecraft resource pack to find
+     * valid keys and values for the block you're using.
+     *
+     * @param key The key of the predicate. For example, "facing".
+     * @param value The value of the predicate. For example, "west".
+     * @return The BlockStateAsset instance.
+     */
     public BlockStateAsset addPredicate(String key, String value) {
         predicates.put(key, value);
         return this;
     }
 
+    /**
+     * Adds a property that is applied when this asset is being applied to a block.
+     * For example, y=90 will rotate the block on the y-axis by 90 degrees.
+     *
+     * You may need to reference the internal Minecraft resource pack to find
+     * valid keys and values for the block you're using.
+     *
+     * @param key The key of the property. For example, "y".
+     * @param value The value of the predicate. For example, "90".
+     * @return The BlockStateAsset instance.
+     */
     public BlockStateAsset addProperty(String key, Object value) {
         properties.put(key, value);
         return this;
@@ -324,66 +457,5 @@ public class BlockStateAsset extends Asset implements Listener {
             }
         }
         return true;
-    }
-
-    @Override
-    public void init(ResourcePackBuilder builder) {
-        this.getMinecraftBlockStatesFolder().mkdirs();
-    }
-
-    @Override
-    public void generate(ResourcePackBuilder builder) {
-
-        //Get all the BlockState assets that are in this file.
-        List<BlockStateAsset> assets = builder.getAssetsOf(BlockStateAsset.class)
-                .stream()
-                .filter(asset -> this.getReplacementName().equals(asset.getReplacementName()))
-                .collect(Collectors.toList());
-
-        //Make sure all are generated.
-        assets.forEach(asset -> asset.setGenerated(true));
-
-        //Create the BlockState file.
-        String fileName = this.getReplacementName() + ".json";
-        File blockStateFile = new File(this.getMinecraftBlockStatesFolder(), fileName);
-
-        JsonObjectBuilder object = new JsonObjectBuilder();
-
-        for(BlockStateAsset asset : assets) {
-            StringBuilder state = new StringBuilder();
-            for(String key : asset.getPredicates().keySet()) {
-                state.append(key).append("=").append(asset.getPredicates().get(key)).append(",");
-            }
-            //Delete the trailing comma
-            if(state.length() > 0) {
-                state.delete(state.length() - 1, state.length());
-            }
-
-            JsonObjectBuilder property = new JsonObjectBuilder();
-
-            //Add all the properties.
-            property.add("model", asset.getModel());
-
-            for(String key : asset.getProperties().keySet()) {
-                Object value = asset.getProperties().get(key);
-                if(value instanceof String) {
-                    property.add(key, (String) value);
-                }
-                if(value instanceof Number) {
-                    property.add(key, (Number) value);
-                }
-
-                if(value instanceof Boolean) {
-                    property.add(key, (Boolean) value);
-                }
-
-                if(value instanceof Character) {
-                    property.add(key, (Character) value);
-                }
-            }
-            object.add(state.toString(), property.getObject());
-        }
-
-        write(new JsonObjectBuilder().add("variants", object.getObject()).getObject(), blockStateFile);
     }
 }

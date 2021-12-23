@@ -25,16 +25,28 @@ public enum RomanNumeral {
         this.value = value;
     }
 
+    /**
+     * @return A reversed list of the Roman Numerals.
+     */
     private static List<RomanNumeral> reversed() {
         List<RomanNumeral> values = Arrays.asList(RomanNumeral.values());
         Collections.reverse(values);
         return values;
     }
 
+    /**
+     * @return The integer value of a Roman Numeral.
+     */
     public int getValue() {
         return value;
     }
 
+    /**
+     * Builds a String of Roman Numerals to correctly display any integer.
+     *
+     * @param number The Integer to get the Roman Numeral for.
+     * @return The String of Roman Numerals that represents the number provided.
+     */
     public static String fromInt(int number) {
         StringBuilder s = new StringBuilder();
         List<RomanNumeral> reversed = reversed();

@@ -1,12 +1,13 @@
 package me.dessie.dessielib.resourcepack;
 
+import me.dessie.dessielib.core.utils.zipper.Zipper;
 import me.dessie.dessielib.resourcepack.assets.Asset;
 import me.dessie.dessielib.resourcepack.assets.LanguageAsset;
 import me.dessie.dessielib.resourcepack.assets.MetaAsset;
 import me.dessie.dessielib.resourcepack.hash.HashUpdater;
 import me.dessie.dessielib.resourcepack.webhost.ResourcePackServer;
-import me.dessie.dessielib.core.utils.zipper.Zipper;
 import org.apache.commons.io.FileUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 
 import java.io.File;
@@ -138,13 +139,12 @@ public class ResourcePackBuilder {
     }
 
     /**
-     * Builds the ResourcePack.
+     * Builds the {@link ResourcePack}.
      * This will generate the .zip for players to immediately equip and start using.
      *
      * @return The ResourcePack object
      */
     public ResourcePack build() {
-
         //Create the Resource Pack folder.
         File resourcePackFolder = new File(ResourcePack.getPlugin().getDataFolder() + "/" + this.getNamespace());
         if(resourcePackFolder.exists()) {
@@ -160,23 +160,29 @@ public class ResourcePackBuilder {
             this.addAsset(new MetaAsset("mcmeta", this.getDescription(), this.getIcon()));
         }
 
-        //Initialize the Assets.
-        this.getAssets().stream().filter(asset -> !asset.isInitialized()).forEach(asset -> {
-            try {
-                asset.init(this);
-            } catch (IOException e) {
-                e.printStackTrace();
+        List<Class<? extends Asset>> generated = new ArrayList<>();
+        for(Asset asset : this.getAssets()) {
+            if(generated.contains(asset.getClass())) continue;
+            if(asset.getGenerator() == null) {
+                Bukkit.getLogger().severe(asset.getClass().getSimpleName() + " does not have a generator. It will be not generated.");
+                continue;
             }
-        });
 
-        //Generate all the Pack's Assets.
-        this.getAssets().stream().filter(asset -> !asset.isGenerated()).forEach(asset -> {
+            //Get the assets that are the same class as the one we're about to generate.
+            List<Asset> assets = this.getAssets().stream()
+                    .filter(asset1 -> asset1.getClass() == asset.getClass())
+                    .toList();
+
+            //Initialize and Generate the assets.
             try {
-                asset.generate(this);
+                asset.getGenerator().init(this, assets);
+                asset.getGenerator().generate(this, assets);
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        });
+
+            generated.add(asset.getClass());
+        }
 
         try {
             //Delete the Old file if it exists
@@ -255,22 +261,7 @@ public class ResourcePackBuilder {
      * @return The ResourcePackBuilder instance
      */
     public ResourcePackBuilder createWebhost(String address, int port, boolean required) {
-        return this.createWebhost(address, port, required, "resourcepack");
-    }
-
-    /**
-     * Hosts the ResourcePack on a local web server for this machine, at the provided context.
-     * If this is created, this resource pack will be sent to all Players as a Server Resource pack.
-     * @param address The address for the web server.
-     * @param port The port for the web server.
-     * @param required If the ResourcePack is required to be applied.
-     *                 If this is true, and a Player declines the ResourcePack, they will be kicked.
-     * @param context The context of the URL to send the resource pack on.
-     *                eg: http://localhost:8080/resourcepack
-     * @return The ResourcePackBuilder instance
-     */
-    public ResourcePackBuilder createWebhost(String address, int port, boolean required, String context) {
-        this.resourcePackServer = new ResourcePackServer(address, port, required, context);
+        this.resourcePackServer = new ResourcePackServer(address, port, required);
         return this;
     }
 }

@@ -9,23 +9,47 @@ import org.bukkit.inventory.PlayerInventory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.BiConsumer;
 
+
+/**
+ * An Enchantment will trigger its abilities (for example {@link me.dessie.dessielib.enchantmentapi.CEnchantment#onBlockBreak(BiConsumer)})
+ *  only when an activator is also satisfied.
+ *
+ *  For example, if you have a pickaxe with an enchantment that instantly destroys a block when you right click, but only in the offhand of the player
+ *  Then your EnchantmentActivator should only have {@link Activator#OFFHAND}.
+ */
 public class EnchantmentActivator {
 
     private List<Activator> activators = new ArrayList<>();
 
+    /**
+     * @param activators The {@link Activator}s that will allow the Enchantment to trigger.
+     */
     public EnchantmentActivator(Activator... activators) {
         this.addActivators(activators);
     }
 
+    /**
+     * @return The {@link Activator}s that must be satisfied to trigger the Enchantment.
+     */
     public List<Activator> getActivators() {
         return activators;
     }
 
+    /**
+     * Adds additional {@link Activator}s to the current list.
+     *
+     * @param activators The Activators to add.
+     */
     public void addActivators(Activator... activators) {
         this.activators.addAll(Arrays.asList(activators));
     }
 
+    /**
+     * @param activator The {@link Activator} to check
+     * @return If a provided Activator satisfies this EnchantmentActivator.
+     */
     public boolean hasActivator(Activator activator) {
         if(activator == Activator.MAINHAND) {
             return this.getActivators().contains(Activator.MAINHAND)
@@ -40,6 +64,10 @@ public class EnchantmentActivator {
         return this.getActivators().contains(activator) || this.getActivators().contains(Activator.ALL);
     }
 
+    /**
+     * @param entity The Entity to retrieve the ItemStacks for.
+     * @return A list of ItemStacks that satisfy an {@link Activator} for this EnchantmentActivator.
+     */
     public List<ItemStack> getItems(LivingEntity entity) {
         List<ItemStack> items = new ArrayList<>();
         if(entity.getEquipment() == null) return items;

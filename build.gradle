@@ -1,11 +1,19 @@
 plugins {
     id 'java'
-    id 'com.github.johnrengelman.shadow' version '6.1.0'
     id 'maven-publish'
 }
 
 group 'me.dessie'
-version '1.1.2'
+version '1.2.0'
+
+//Define the Minecraft Version.
+String minecraftVersion = "1.18.1-R0.1-SNAPSHOT"
+
+//Apply the java plugin across subprojects.
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'maven-publish'
+}
 
 //Make sure the plugin.yml version is similar to the project version.
 processResources {
@@ -14,47 +22,75 @@ processResources {
     }
 }
 
-//Apply the java plugin across subprojects.
-subprojects {
-    apply plugin: 'java'
-    apply plugin: 'maven-publish'
+project.gradle.projectsEvaluated {
+    allprojects {
+        java.sourceCompatibility = java.targetCompatibility = JavaVersion.VERSION_17
+        compileJava.options.encoding = 'UTF-8'
+
+        java {
+            withSourcesJar()
+            withJavadocJar()
+        }
+
+        task obfuscate {
+            description 'Generates a JAR where Mojangs Mappings are first mapped to obfuscated, and then mapped to Spigots mappings. This jar can run on a Spigot server.'
+            group = 'obfuscate'
+            String localMinecraft = "/.m2/repository/org/spigotmc/minecraft-server/"
+            String homeDir = project.gradle.gradleUserHomeDir.parent
+            String toolingDir = "${rootProject.projectDir}/tooling/specialsource"
+
+            doLast {
+                //First remap to obfuscated
+                exec {
+                    commandLine 'java',
+                            '-cp', "${toolingDir}/SpecialSource.jar;${homeDir}/.m2/repository/org/spigotmc/spigot/${minecraftVersion}/spigot-${minecraftVersion}-remapped-mojang.jar", 'net.md_5.specialsource.SpecialSource',
+                            '-l',
+                            '-i', "${buildDir}/libs/${project.name}-${project.version}.jar",
+                            '-o', "${buildDir}/libs/${project.name}-obf.jar",
+                            '-m', "${homeDir}/${localMinecraft}/${minecraftVersion}/minecraft-server-${minecraftVersion}-maps-mojang.txt",
+                            '-r', '-q'
+                }
+
+                //Then remap to Spigot
+                exec {
+                    commandLine 'java',
+                            '-cp', "${toolingDir}/SpecialSource.jar;${homeDir}/.m2/repository/org/spigotmc/spigot/${minecraftVersion}/spigot-${minecraftVersion}-remapped-obf.jar", 'net.md_5.specialsource.SpecialSource',
+                            '-l',
+                            '-i', "${buildDir}/libs/${project.name}-obf.jar",
+                            '-o', "${buildDir}/libs/${project.name}-${project.version}.jar",
+                            '-m', "${homeDir}/${localMinecraft}/${minecraftVersion}/minecraft-server-${minecraftVersion}-maps-spigot.csrg",
+                            '-q'
+                }
+            }
+        }
+
+        build.finalizedBy obfuscate
+
+        //Repositories that all modules use.
+        repositories {
+            mavenLocal()
+            mavenCentral()
+        }
+
+        dependencies {
+            //All modules depend on Spigot, duh.
+            compileOnly "org.spigotmc:spigot:${minecraftVersion}:remapped-mojang"
+
+            //Only used so Spigot Sources do not have annotation errors.
+            compileOnly 'org.jetbrains:annotations:16.0.2'
+        }
+    }
 }
 
-allprojects {
-    version = project.version
-
-    java.sourceCompatibility = JavaVersion.VERSION_17
-    java.targetCompatibility = JavaVersion.VERSION_17
-
-    compileJava.options.encoding = 'UTF-8'
-
-    task obfuscate(type: Exec) {
-        description 'Generates a JAR where Mojangs Mappings are mapped to Obfuscated ones. Cannot run properly on a Spigot server.'
-        group = 'obfuscate'
-        workingDir "${buildDir}"
-        toolingDir = rootProject.findProperty("toolingDir")
-        ext.homeDir = project.gradle.gradleUserHomeDir.parent
-
-        commandLine 'java', '-cp', toolingDir + '/SpecialSource.jar;' + ext.homeDir + '/.m2/repository/org/spigotmc/spigot/' + minecraftVersion + '/spigot-' + minecraftVersion + '-remapped-mojang.jar', 'net.md_5.specialsource.SpecialSource',
-                '--live', '-i', 'libs/' + project.name + "-" + project.version + '.jar',
-                '-o', 'libs/' + project.name + "-obf.jar", '-m',
-                ext.homeDir + '/.m2/repository/org/spigotmc/minecraft-server/' + minecraftVersion + '/minecraft-server-' + minecraftVersion + '-maps-mojang.txt',
-                '--reverse'
+//Add Core module as a dependency for all other modules, except itself.
+configure(subprojects.findAll {it.name != 'core'}) {
+    dependencies {
+        implementation project(":core")
     }
+}
 
-    task deobfuscate(type: Exec) {
-        description 'Generates a JAR where Obfuscated Mappings are mapped to Spigot ones. Should be used on a Spigot server.'
-        group = 'obfuscate'
-        workingDir "${buildDir}"
-        toolingDir = rootProject.findProperty("toolingDir")
-        ext.homeDir = project.gradle.gradleUserHomeDir.parent
-
-        commandLine 'java', '-cp', toolingDir + '/SpecialSource.jar;' + ext.homeDir + '/.m2/repository/org/spigotmc/spigot/' + minecraftVersion + '/spigot-' + minecraftVersion + '-remapped-obf.jar', 'net.md_5.specialsource.SpecialSource',
-                '--live', '-i', 'libs/' + project.name + '-obf.jar',
-                '-o', 'libs/' + project.name + '.jar', '-m',
-                ext.homeDir + '/.m2/repository/org/spigotmc/minecraft-server/' + minecraftVersion + '/minecraft-server-' + minecraftVersion + '-maps-spigot.csrg'
-    }
-
+//Make sure all projects can be published except a testing experimental one.
+configure(allprojects.findAll {it.name != 'experimental'}) {
     publishing {
         repositories {
             maven {
@@ -75,38 +111,15 @@ allprojects {
             }
         }
     }
-
-    build.finalizedBy obfuscate
-    build.finalizedBy deobfuscate
-
-    repositories {
-        mavenLocal()
-        mavenCentral()
-    }
-
-    dependencies {
-        compileOnly 'org.spigotmc:spigot:' + minecraftVersion + ':remapped-mojang'
-    }
-
 }
 
-//Add Core module as a dependency for all other modules, except itself.
-configure(subprojects.findAll {it.name != 'core'}) {
-    dependencies {
-        implementation project(":core")
-    }
-}
-
-shadowJar {
-    archiveName('DessieLib-' + rootProject.version + '.jar')
-}
-
+//Copy the JAR to the output directory
 task copyJar(type: Copy) {
-    from "$buildDir/libs/DessieLib-" + rootProject.version + '.jar'
-    into project.findProperty("outputDir")
+    from "$buildDir/libs/" + rootProject.name + '-' + rootProject.version + '.jar'
+    into rootProject.findProperty("outputDir")
 }
 
-shadowJar.finalizedBy copyJar
+build.finalizedBy copyJar
 
 dependencies {
     implementation project(":core")
@@ -116,4 +129,16 @@ dependencies {
     implementation project(":scoreboard-api")
     implementation project(":resourcepack-api")
     implementation project(":particle-api")
+}
+
+//Used to create the fat jar
+jar {
+    from {
+        configurations.runtimeClasspath.collect {
+            exclude 'module-info.class'
+            exclude 'META-INF/**/*'
+
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
 }

@@ -1,12 +1,13 @@
 package me.dessie.dessielib.enchantmentapi;
 
+import me.dessie.dessielib.core.events.slot.SlotEventHelper;
+import me.dessie.dessielib.core.events.slot.SlotUpdateEvent;
+import me.dessie.dessielib.core.utils.Colors;
 import me.dessie.dessielib.enchantmentapi.activator.Activator;
 import me.dessie.dessielib.enchantmentapi.activator.EnchantmentActivator;
 import me.dessie.dessielib.enchantmentapi.listener.CEventResult;
 import me.dessie.dessielib.enchantmentapi.properties.CEnchantProperties;
 import me.dessie.dessielib.enchantmentapi.utils.RomanNumeral;
-import me.dessie.dessielib.core.events.slot.SlotEventHelper;
-import me.dessie.dessielib.core.events.slot.SlotUpdateEvent;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -30,7 +31,7 @@ import java.util.stream.Collectors;
 
 public class CEnchantment extends Enchantment {
 
-    private static List<CEnchantment> enchantments = new ArrayList<>();
+    private static final List<CEnchantment> enchantments = new ArrayList<>();
 
     private boolean registered;
 
@@ -70,9 +71,15 @@ public class CEnchantment extends Enchantment {
     private Consumer<CEventResult> enchant;
     private Consumer<CEventResult> disenchant;
 
+    /**
+     * @param name The name of the enchantment. Must be unique to your plugin.
+     *             Can be similar to other enchantments outside your namespace.
+     *
+     *             The name should not contain spaces or special characters.
+     */
     public CEnchantment(String name) {
-        super(new NamespacedKey(CEnchantmentLoader.getPlugin(), name));
-        if(!CEnchantmentLoader.isRegistered()) {
+        super(new NamespacedKey(CEnchantmentAPI.getPlugin(), name));
+        if(!CEnchantmentAPI.isRegistered()) {
             throw new IllegalStateException("You need to register CEnchantmentLoader before creating CEnchantments!");
         }
 
@@ -80,10 +87,29 @@ public class CEnchantment extends Enchantment {
         this.registerEnchantment();
     }
 
+    /**
+     * @return The {@link CEnchantProperties} that are being applied to this Enchantment.
+     */
     public CEnchantProperties getEnchantProperties() { return this.properties; }
+
+    /**
+     * @return How this Enchantment is displayed as Lore when it's placed on an ItemStack.
+     */
     public String getDisplayName() { return this.displayName == null ? this.getName() : this.displayName;  }
+
+    /**
+     * @return The {@link EnchantmentActivator} that this Enchantment uses to fire it's consumers.
+     */
     public EnchantmentActivator getEnchantmentActivator() { return activator; }
+
+    /**
+     * @return If the level is displayed as Roman Numerals
+     */
     public boolean isUsesRomanNumerals() { return usesRomanNumerals; }
+
+    /**
+     * @return If the Enchantment is registered and ready for use.
+     */
     public boolean isRegistered() {
         return registered;
     }
@@ -106,10 +132,49 @@ public class CEnchantment extends Enchantment {
     public Consumer<CEventResult> getEnchant() { return enchant; }
     public Consumer<CEventResult> getDisenchant() { return disenchant; }
 
+    /**
+     * Enchants an ItemStack with the Enchantment.
+     * Obeys all conflicts and level caps. Use {@link CEnchantment#unsafeEnchant(ItemStack, int)} to bypass.
+     *
+     * Note: This method is required to add CEnchantments to an ItemStack. Do not use {@link ItemStack#addEnchantment(Enchantment, int)}!
+     *
+     * @param item The {@link ItemStack} that will be enchanted.
+     * @param level The level to enchant the ItemStack with.
+     */
     public void enchant(ItemStack item, int level) { enchant(item, level, false); }
+
+    /**
+     * Enchants an ItemStack with the Enchantment.
+     *
+     * Note: This method is required to add CEnchantments to an ItemStack. Do not use {@link ItemStack#addEnchantment(Enchantment, int)}!
+     *
+     * @param item The {@link ItemStack} that will be enchanted.
+     * @param level The level to enchant the ItemStack with.
+     * @param unsafe Whether to forcefully add the enchantment, or to obey conflicts and level cap.
+     */
     private void enchant(ItemStack item, int level, boolean unsafe) { enchant(item, level, unsafe, true); }
+
+    /**
+     * Forcefully enchants an ItemStack with the Enchantment.
+     * This method will ignore item and enchantment conflicts and enchantment level cap.
+     *
+     * Note: This method is required to add CEnchantments to an ItemStack. Do not use {@link ItemStack#addEnchantment(Enchantment, int)}!
+     *
+     * @param item The {@link ItemStack} that will be enchanted.
+     * @param level The level to enchant the ItemStack with.
+     */
     public void unsafeEnchant(ItemStack item, int level) { enchant(item, level, true); }
 
+    /**
+     * Enchants an ItemStack with the Enchantment.
+     *
+     * Note: This method is required to add CEnchantments to an ItemStack. Do not use {@link ItemStack#addEnchantment(Enchantment, int)}!
+     *
+     * @param item The {@link ItemStack} that will be enchanted.
+     * @param level The level to enchant the ItemStack with.
+     * @param unsafe Whether to forcefully add the enchantment, or to obey conflicts and level cap.
+     * @param doEnchantEvent If the enchantment consumer should be accepted when enchanting.
+     */
     public void enchant(ItemStack item, int level, boolean unsafe, boolean doEnchantEvent) {
         if(item == null || item.getItemMeta() == null) return;
 
@@ -144,7 +209,23 @@ public class CEnchantment extends Enchantment {
         }
     }
 
+    /**
+     * Removes the Enchantment from the provided ItemStack. 
+     *
+     * Note: This method is required to remove CEnchantments from an ItemStack. Do not use {@link ItemStack#removeEnchantment(Enchantment)}!
+     * 
+     * @param item The ItemStack to remove the enchantment from.
+     */
     public void removeEnchantment(ItemStack item) { removeEnchantment(item, true); }
+
+    /**
+     * Removes the Enchantment from the provided ItemStack.
+     *
+     * Note: This method is required to remove CEnchantments from an ItemStack. Do not use {@link ItemStack#removeEnchantment(Enchantment)}!
+     *
+     * @param item The ItemStack to remove the enchantment from.
+     * @param doDisenchantEvent If the disenchant consumer should be accepted.
+     */
     public void removeEnchantment(ItemStack item, boolean doDisenchantEvent) {
         if(item.getItemMeta() == null) return;
         int level = getLevel(item, this);
@@ -175,149 +256,298 @@ public class CEnchantment extends Enchantment {
         }
     }
 
+    /**
+     * @param properties The {@link CEnchantProperties} to apply to this CEnchantment.
+     * @return The CEnchantment instance.
+     */
     public CEnchantment setEnchantProperties(CEnchantProperties properties) {
+        if(properties == null) throw new IllegalArgumentException("Properties cannot be null");
+
         this.properties = properties;
         properties.setEnchantment(this);
         return this;
     }
 
+    /**
+     * Sets the name that is displayed on an ItemStack.
+     * The display name can be colored and formatted, and may contain spaces and special characters.
+     *
+     * @param displayName The name to display
+     * @return The CEnchantment instance.
+     */
     public CEnchantment setDisplayName(String displayName) {
-        this.displayName = displayName;
+        this.displayName = Colors.color(displayName);
         return this;
     }
 
+    /**
+     * Sets the maximum enchantment level that this enchantment can be obtained naturally.
+     * This can be bypassed using {@link CEnchantment#unsafeEnchant(ItemStack, int)}
+     *
+     * @param maxLevel The maximum level this enchantment can be.
+     * @return The CEnchantment instance.
+     */
     public CEnchantment setMaxLevel(int maxLevel) {
         this.maxLevel = maxLevel;
         return this;
     }
 
+    /**
+     * @param usesRomanNumerals If the level should be displayed using Roman Numerals or Integers.
+     * @return The CEnchantment instance.
+     */
     public CEnchantment setUsesRomanNumerals(boolean usesRomanNumerals) {
         this.usesRomanNumerals = usesRomanNumerals;
         return this;
     }
 
+    /**
+     * Marking an Enchantment as a treasure enchantment will
+     *   1. Make it unobtainable via the Enchanting Table
+     *   2. Make it cost significantly more in villager trades.
+     *
+     * @param treasure Marks this enchantment as a treasure Enchantment
+     * @return The CEnchantment instance.
+     */
     public CEnchantment setTreasure(boolean treasure) {
         this.treasure = treasure;
         return this;
     }
 
+    /**
+     * Marking an Enchantment as a cursed enchantment will make the enchantment appear red.
+     * Cursed enchantments can still be removed from the Grindstone if {@link CEnchantProperties#canRemoveWithGrindstone()} is true.
+     *
+     * @param cursed Marks this enchantment as a cursed Enchantment
+     * @return The CEnchantment instance.
+     */
     public CEnchantment setCursed(boolean cursed) {
         this.cursed = cursed;
         return this;
     }
 
+    /**
+     *
+     * This can be bypassed using {@link CEnchantment#unsafeEnchant(ItemStack, int)}
+     * Additional Materials can be added by using {@link CEnchantment#addEnchantables(Material...)}
+     *
+     * @param target Defines which ItemStacks this Enchantment can safely be applied to.
+     *               If the material does not satisfy this target and does not satisfy
+     * @return The CEnchantment instance.
+     */
     public CEnchantment setEnchantmentTarget(EnchantmentTarget target) {
         this.target = target;
         return this;
     }
 
+    /**
+     * Set the {@link EnchantmentActivator} for this Enchantment.
+     * This Activator handles when the consumer events are fired for this Enchantment, such that your Enchantment triggers at correct times.
+     *
+     * @param activator The EnchantmentActivator that will satisfy triggering this Enchantment.
+     * @return The CEnchantment instance.
+     */
     public CEnchantment setEnchantmentActivator(EnchantmentActivator activator) {
         this.activator = activator;
         return this;
     }
 
+    /**
+     * An arbitrary {@link Predicate} that must be satisfied for the enchantment to be applied to the ItemStack.
+     * If this predicate fails, the ItemStack will not be enchanted.
+     *
+     * This can be bypassed using {@link CEnchantment#unsafeEnchant(ItemStack, int)}
+     *
+     * @param predicate The Predicate to check.
+     * @return The CEnchantment instance.
+     */
     public CEnchantment setCanEnchantPredicate(Predicate<ItemStack> predicate) {
         this.canEnchantPredicate = predicate;
         return this;
     }
 
+    /**
+     * Adds valid {@link Material}s to this enchantment.
+     * These can be bypassed using {@link CEnchantment#unsafeEnchant(ItemStack, int)}
+     *
+     * See {@link CEnchantment#setEnchantmentTarget(EnchantmentTarget)} for groups of Materials that can be added.
+     *
+     * @param materials The Materialss that are valid for the enchantment.
+     * @return The CEnchantment instance.
+     */
     public CEnchantment addEnchantables(Material... materials) {
         canEnchant.addAll(Arrays.asList(materials));
         return this;
     }
 
+    /**
+     * Adds Enchantments that conflict with this enchantment.
+     * Vanilla {@link Enchantment} and CEnchantments can both be added as conflicts.
+     *
+     * If an item has a conflicting enchantment with this enchantment, the item will not be enchanted with this enchantment.
+     *
+     * This can be bypassed using {@link CEnchantment#unsafeEnchant(ItemStack, int)}
+     *
+     * @param enchantments Enchantments to add that conflict with the enchantment.
+     * @return The CEnchantment instance.
+     */
     public CEnchantment addConflicts(Enchantment... enchantments) {
         conflicts.addAll(Arrays.asList(enchantments));
         return this;
     }
 
+    /**
+     * @param consumer A consumer that will be applied when the Player right clicks.
+     * @return The CEnchantment instance.
+     */
     public CEnchantment onRightClick(BiConsumer<PlayerInteractEvent, CEventResult> consumer) {
         this.rightClick = consumer;
         return this;
     }
 
+    /**
+     * @param consumer A consumer that will be applied when the Entity attacks another entity.
+     * @return The CEnchantment instance.
+     */
     public CEnchantment onEntityAttack(BiConsumer<EntityDamageByEntityEvent, CEventResult> consumer) {
         this.entityAttack = consumer;
         return this;
     }
 
+    /**
+     * @param consumer A consumer that will be applied when the Entity breaks a block.
+     * @return The CEnchantment instance.
+     */
     public CEnchantment onBlockBreak(BiConsumer<BlockBreakEvent, CEventResult> consumer) {
         this.blockBreak = consumer;
         return this;
     }
 
+    /**
+     * @param consumer A consumer that will be applied when the Entity places a block.
+     * @return The CEnchantment instance.
+     */
     public CEnchantment onBlockPlace(BiConsumer<BlockPlaceEvent, CEventResult> consumer) {
         this.blockPlace = consumer;
         return this;
     }
 
+    /**
+     * @param consumer A consumer that will be applied when the Entity fires an arrow.
+     * @return The CEnchantment instance.
+     */
     public CEnchantment onArrowFire(BiConsumer<ProjectileLaunchEvent, CEventResult> consumer) {
         this.arrowShoot = consumer;
         return this;
     }
 
+    /**
+     * @param consumer A consumer that will be applied when an arrow the Entity fired lands
+     * @return The CEnchantment instance.
+     */
     public CEnchantment onArrowLand(BiConsumer<ProjectileHitEvent, CEventResult> consumer) {
         this.arrowLand = consumer;
         return this;
     }
 
+    /**
+     * @param consumer A consumer that will be applied when an arrow the Entity holds the Item that this Enchantment is applied to.
+     *                 See {@link CEnchantment#onUnhold(BiConsumer)} for reverting changes you make in this consumer.
+     * @return The CEnchantment instance.
+     */
     public CEnchantment onHold(BiConsumer<SlotUpdateEvent, CEventResult> consumer) {
         this.hold = consumer;
         return this;
     }
 
+    /**
+     * @param consumer A consumer that will be applied when an arrow the Entity stops holds the Item that this Enchantment is applied to.
+     *                 See {@link CEnchantment#onHold(BiConsumer)} for applying something when they hold an item.
+     * @return The CEnchantment instance.
+     */
     public CEnchantment onUnhold(BiConsumer<SlotUpdateEvent, CEventResult> consumer) {
         this.unhold = consumer;
         return this;
     }
 
+    /**
+     * @param consumer A consumer that will be applied when an Entity equips an Armor piece that has this Enchantment.
+     * @return The CEnchantment instance.
+     */
     public CEnchantment onArmorEquip(BiConsumer<SlotUpdateEvent, CEventResult> consumer) {
         this.armorEquip = consumer;
         return this;
     }
 
+    /**
+     * @param consumer A consumer that will be applied when an Entity un-equips an Armor piece that has this Enchantment.
+     * @return The CEnchantment instance.
+     */
     public CEnchantment onArmorUnequip(BiConsumer<SlotUpdateEvent, CEventResult> consumer) {
         this.armorUnequip = consumer;
         return this;
     }
 
+    /**
+     * @param consumer A consumer that will be applied when an Entity is damaged.
+     * @return The CEnchantment instance.
+     */
     public CEnchantment onDamaged(BiConsumer<EntityDamageEvent, CEventResult> consumer) {
         this.damaged = consumer;
         return this;
     }
 
+    /**
+     * @param consumer A consumer that will be applied when an Entity dies
+     * @return The CEnchantment instance.
+     */
     public CEnchantment onDeath(BiConsumer<EntityDeathEvent, CEventResult> consumer) {
         this.death = consumer;
         return this;
     }
 
+    /**
+     * @param consumer A consumer that will be applied when an Entity drops an item
+     * @return The CEnchantment instance.
+     */
     public CEnchantment onDrop(BiConsumer<PlayerDropItemEvent, CEventResult> consumer) {
         this.dropped = consumer;
         return this;
     }
 
+    /**
+     * @param consumer A consumer that will be applied when an Entity picks an item up
+     * @return The CEnchantment instance.
+     */
     public CEnchantment onPickup(BiConsumer<EntityPickupItemEvent, CEventResult> consumer) {
         this.pickup = consumer;
         return this;
     }
 
+    /**
+     * @param consumer A consumer that will be applied when an Entity enchants an Item with this Enchantment
+     * @return The CEnchantment instance.
+     */
     public CEnchantment onEnchant(Consumer<CEventResult> consumer) {
         this.enchant = consumer;
         return this;
     }
 
+    /**
+     * @param consumer A consumer that will be applied when an Entity removes this enchantment from an Item
+     * @return The CEnchantment instance.
+     */
     public CEnchantment onDisenchant(Consumer<CEventResult> consumer) {
         this.disenchant = consumer;
         return this;
     }
-
 
     private void registerEnchantment() {
         if(this.isRegistered()) throw new IllegalStateException("Enchantment is already registered");
 
         //Server already knows about the enchantment, server was probably reloaded.
         //We need to unregister this enchantment.
-        if(Enchantment.getByKey(new NamespacedKey(CEnchantmentLoader.getPlugin(), this.getName())) != null) {
+        if(Enchantment.getByKey(new NamespacedKey(CEnchantmentAPI.getPlugin(), this.getName())) != null) {
             try {
                 Field byKey = Enchantment.class.getDeclaredField("byKey");
                 Field byName = Enchantment.class.getDeclaredField("byName");
@@ -326,7 +556,7 @@ public class CEnchantment extends Enchantment {
                 Map<NamespacedKey, Enchantment> keys = (Map<NamespacedKey, Enchantment>) byKey.get(null);
                 Map<String, Enchantment> names = (Map<String, Enchantment>) byName.get(null);
 
-                keys.remove(new NamespacedKey(CEnchantmentLoader.getPlugin(), this.getName()));
+                keys.remove(new NamespacedKey(CEnchantmentAPI.getPlugin(), this.getName()));
                 names.remove(this.getName());
 
                 byKey.setAccessible(false);
@@ -352,6 +582,130 @@ public class CEnchantment extends Enchantment {
         enchantments.add(this);
     }
 
+    /**
+     * Checks if two enchantment conflict with each other.
+     * For example, it's possible for a CEnchantment to conflict with Sharpness
+     * But Sharpness doesn't conflict with Mighty.
+     *
+     * @param enchantment An Enchantment to check
+     * @param enchantment2 A second enchantment to check.
+     * @return If either enchantment conflicts with each other.
+     */
+    public static boolean conflictsWith(Enchantment enchantment, Enchantment enchantment2) {
+        return enchantment.conflictsWith(enchantment2) || enchantment2.conflictsWith(enchantment);
+    }
+
+    /**
+     * @param enchantments All enchantments to check
+     * @return If this enchantment conflicts with ANY of the provided me.dessie.dessielib.experimental.enchantments.
+     */
+    public boolean conflictsWith(Set<Enchantment> enchantments) {
+        for(Enchantment enchantment : enchantments) {
+            if(conflictsWith(enchantment)) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param item The {@link ItemStack} to check for conflicts.
+     * @return If this Enchantment conflicts with any Enchantments on the provided ItemStack.
+     */
+    public boolean conflictsWith(ItemStack item) {
+        for(Enchantment enchantment : item.getEnchantments().keySet()) {
+            if(conflictsWith(enchantment)) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param item The {@link ItemStack} to check
+     * @return If this Enchantment can safely be applied to the ItemStack.
+     */
+    @Override
+    public boolean canEnchantItem(ItemStack item) {
+        return canEnchant.contains(item.getType())
+                || this.target != null && getItemTarget().includes(item)
+                || (this.canEnchantPredicate != null && this.canEnchantPredicate.test(item));
+    }
+
+    /**
+     * @param item The {@link ItemStack} to check.
+     * @param enchantment The Enchantment to look for
+     * @return If the provided ItemStack is enchanted with the provided Enchantment.
+     */
+    public static boolean hasEnchantment(ItemStack item, Enchantment enchantment) {
+        if(item == null) return false;
+        if(item.getItemMeta() == null) return false;
+        return item.getItemMeta().hasEnchant(enchantment);
+    }
+
+    /**
+     *
+     * @param item The {@link ItemStack} to check.
+     * @param enchantment The Enchantment to retrieve the level for.
+     * @return The level of the Enchantment on the item, or 0 if the item is not enchanted with the provided Enchantment.
+     */
+    public static int getLevel(ItemStack item, Enchantment enchantment) {
+        if(item.getType() == Material.ENCHANTED_BOOK) {
+            EnchantmentStorageMeta meta = (EnchantmentStorageMeta) item.getItemMeta();
+            return meta.getStoredEnchants().getOrDefault(enchantment, 0);
+        }
+
+        if(!hasEnchantment(item, enchantment)) return 0;
+        return item.getEnchantments().get(enchantment);
+    }
+
+    /**
+     * @return All registered CEnchantments.
+     */
+    public static List<CEnchantment> getEnchantments() {
+        return enchantments;
+    }
+
+    /**
+     * This method will not return Vanilla Enchantments.
+     *
+     * @param item The {@link ItemStack} to get the CEnchantments for
+     * @return All CEnchantments that are currently applied to the ItemStack.
+     */
+    public static List<CEnchantment> getEnchantments(ItemStack item) {
+        if(SlotEventHelper.isNullOrAir(item)) return new ArrayList<>();
+
+        if(item.getType() == Material.ENCHANTED_BOOK) {
+            return (((EnchantmentStorageMeta) item.getItemMeta()).getStoredEnchants().keySet().stream().map(ench -> CEnchantment.getByKey(ench.getKey()))
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList()));
+        } else {
+            return item.getEnchantments().keySet().stream().map(ench -> CEnchantment.getByKey(ench.getKey()))
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+        }
+    }
+
+    /**
+     * @param name The name of a CEnchantment
+     * @return The CEnchantment instance with the provided name, or null if it doesn't exist.
+     */
+    public static CEnchantment getByName(String name) {
+        return enchantments.stream().filter(ench -> ench.getName().equalsIgnoreCase(name))
+                .findAny().orElse(null);
+    }
+
+    /**
+     * @param key The {@link NamespacedKey} of a CEnchantment
+     * @return The CEnchantment instance with the provided key, or null if it doesn't exist.
+     */
+    public static CEnchantment getByKey(NamespacedKey key) {
+        return CEnchantment.getEnchantments().stream().filter(ench -> ench.getKey().equals(key)).findAny().orElse(null);
+    }
+
+    @Override
+    public String toString() {
+        return "CEnchantment[" + this.getKey() + "]";
+    }
+
     @Override
     public String getName() { return this.name; }
 
@@ -373,96 +727,6 @@ public class CEnchantment extends Enchantment {
     @Override
     public boolean conflictsWith(Enchantment enchantment) {
         return conflicts.contains(enchantment) || this == enchantment;
-    }
-
-    /**
-     * Checks if two enchantment conflict with each other.
-     * For example, it's possible for a CEnchantment to conflict with Sharpness
-     * But Sharpness doesn't conflict with Mighty.
-     *
-     * @param enchantment An Enchantment to check
-     * @param enchantment2 A second enchantment to check.
-     * @return If either enchantment conflicts with each other.
-     */
-    public static boolean conflictsWith(Enchantment enchantment, Enchantment enchantment2) {
-        return enchantment.conflictsWith(enchantment2) || enchantment2.conflictsWith(enchantment);
-    }
-
-    /**
-     * @param enchantments All me.dessie.dessielib.enchantments to check
-     * @return If this enchantment conflicts with ANY of the provided me.dessie.dessielib.enchantments.
-     */
-    public boolean conflictsWith(Set<Enchantment> enchantments) {
-        for(Enchantment enchantment : enchantments) {
-            if(conflictsWith(enchantment)) return true;
-        }
-
-        return false;
-    }
-
-    public boolean conflictsWith(ItemStack item) {
-        for(Enchantment enchantment : item.getEnchantments().keySet()) {
-            if(conflictsWith(enchantment)) return true;
-        }
-
-        return false;
-    }
-
-    @Override
-    public boolean canEnchantItem(ItemStack item) {
-        return canEnchant.contains(item.getType())
-                || (getItemTarget() != null && getItemTarget().includes(item))
-                || (this.canEnchantPredicate != null && this.canEnchantPredicate.test(item));
-    }
-
-    public static boolean hasEnchantment(ItemStack item, Enchantment enchantment) {
-        if(item == null) return false;
-        if(item.getItemMeta() == null) return false;
-        return item.getItemMeta().hasEnchant(enchantment);
-    }
-
-    public static int getLevel(ItemStack item, Enchantment enchantment) {
-        if(item.getType() == Material.ENCHANTED_BOOK) {
-            EnchantmentStorageMeta meta = (EnchantmentStorageMeta) item.getItemMeta();
-            return meta.getStoredEnchants().containsKey(enchantment) ? meta.getStoredEnchants().get(enchantment) : 0;
-        }
-
-        if(!hasEnchantment(item, enchantment)) return 0;
-        return item.getEnchantments().get(enchantment);
-    }
-
-    //Returns all me.dessie.dessielib.enchantments
-    public static List<CEnchantment> getEnchantments() {
-        return enchantments;
-    }
-
-    //Returns all CEnchantments on an item
-    public static List<CEnchantment> getEnchantments(ItemStack item) {
-        if(SlotEventHelper.isNullOrAir(item)) return new ArrayList<>();
-
-        if(item.getType() == Material.ENCHANTED_BOOK) {
-            return (((EnchantmentStorageMeta) item.getItemMeta()).getStoredEnchants().keySet().stream().map(ench -> CEnchantment.getByKey(ench.getKey()))
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList()));
-        } else {
-            return item.getEnchantments().keySet().stream().map(ench -> CEnchantment.getByKey(ench.getKey()))
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
-        }
-    }
-
-    public static CEnchantment getByName(String name) {
-        return enchantments.stream().filter(ench -> ench.getName().equalsIgnoreCase(name))
-                .findAny().orElse(null);
-    }
-
-    public static CEnchantment getByKey(NamespacedKey key) {
-        return CEnchantment.getEnchantments().stream().filter(ench -> ench.getKey().equals(key)).findAny().orElse(null);
-    }
-
-    @Override
-    public String toString() {
-        return "CEnchantment[" + this.getKey() + "]";
     }
 
 }
