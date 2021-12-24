@@ -45,7 +45,7 @@ depends: [DessieLib]
 ```
 to your plugin.yml.
 
-You can download the standalone JAR file from the latest packages release or clone the repository and build the JAR yourself.
+You can download the standalone JAR file from the latest packages release, the latest [release](https://github.com/Dessie0/DessieLib/releases/tag/1.2.1) or clone the repository and build the JAR yourself.
 
 
 ### :ledger: Documentation
