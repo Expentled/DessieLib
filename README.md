@@ -23,7 +23,7 @@ maven {
 }
 
 dependencies {
-  compileOnly 'me.dessie.dessielib:dessielib:1.2.0'
+  compileOnly 'me.dessie.dessielib:dessielib:1.2.1'
 }
 ```
 
@@ -33,7 +33,7 @@ dependencies {
   <dependency>
     <groupId>me.dessie.dessielib</groupId>
     <artifactId>dessielib</artifactId>
-    <version>1.2.0</version>
+    <version>1.2.1</version>
   </dependency>
 </dependencies>
 ```
