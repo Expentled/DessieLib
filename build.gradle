@@ -129,6 +129,7 @@ dependencies {
     implementation project(":scoreboard-api")
     implementation project(":resourcepack-api")
     implementation project(":particle-api")
+    implementation project(":command-api")
 }
 
 //Used to create the fat jar
