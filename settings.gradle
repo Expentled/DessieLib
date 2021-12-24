@@ -8,4 +8,5 @@ include 'resourcepack-api'
 include 'packeteer'
 include 'enchantment-api'
 include 'experimental'
+include 'command-api'
 

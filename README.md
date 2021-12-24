@@ -38,6 +38,16 @@ dependencies {
 </dependencies>
 ```
 
+#### External Dependency
+If you're choosing to use DessieLib as an external dependency, instead of shading the individual modules, you need to add
+```yml
+depends: [DessieLib]
+```
+to your plugin.yml.
+
+You can download the standalone JAR file from the latest packages release or clone the repository and build the JAR yourself.
+
+
 ### :ledger: Documentation
 
 The complete JavaDocs can be found [here](https://dessie0.github.io/DessieLib/) <br><br>
@@ -52,6 +62,7 @@ DessieLib provides many features that are cumbersome in CraftBukkit and Spigot, 
 - `EnchantmentAPI` can manage fully customizable Enchantments
 - `ResourcepackAPI` Allows you to generate an entire resource pack by just dropping in files.
 - `Packeteer` Allows you to listen for incoming and outgoing packets, and fire events for these packets.
+- `CommandAPI` can automatically register your commands without needing to write them in the plugin.yml
 
 <details>
 <summary>Basic InventoryAPI Usage</summary>
@@ -415,6 +426,66 @@ public class Main extends JavaPlugin implements PacketListener {
         //Now we can just use the packet as we would a normal event.
         //This event will fire if the player middle clicks an item that is in their inventory.
         Bukkit.getLogger().info(player.getName() + " picked item in slot " + packet.getSlot());
+    }
+}
+
+```
+
+</details>
+
+<details>
+<summary>Basic CommandAPI Usage</summary>
+
+```java
+public class Main extends JavaPlugin {
+    @Override
+    public void onEnable() {
+        //Register the CommandAPI and tell it to register all the commands.
+        CommandAPI.register(this, true);
+    }
+}
+
+public class ExampleCommand extends XCommand {
+
+    //Default constructor required.
+    public ExampleCommand() {
+        //Call the XCommand super constructor with the name and description
+        super("example", "An example command for CommandAPI showcase");
+
+        this.addAliases("examplecommand", "commandapi") //Add any command aliases
+                .setUsage("/<command> args") //Add the usage message
+                .setPermission("commandapi.example") //Add the required permission to use the command
+                .setPermissionMessage("&cYou do not have permission to use that command!"); //Add the no permission message
+    }
+
+    /*
+    Override the method for when a Player executes this command.
+     */
+    @Override
+    protected void execute(Player player, String[] args) {
+        player.sendMessage("Hello, " + player.getName() + "!");
+    }
+
+    /*
+    Override the method for when Console executes this command.
+     */
+    @Override
+    protected void execute(ConsoleCommandSender console, String[] args) {
+        console.sendMessage("Hello console!");
+    }
+
+    /*
+    Add tab completion for when any sender executes the command.
+     */
+    @Override
+    protected List<String> executeTab(CommandSender player, String[] args) {
+        if(args.length == 1) {
+            return Arrays.asList("Hello", "how", "are", "you");
+        } else if(args.length == 2) {
+            return null;
+        }
+
+        return new ArrayList<>();
     }
 }
 

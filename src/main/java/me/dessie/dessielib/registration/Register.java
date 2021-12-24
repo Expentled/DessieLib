@@ -1,5 +1,6 @@
 package me.dessie.dessielib.registration;
 
+import me.dessie.dessielib.commandapi.CommandAPI;
 import me.dessie.dessielib.core.events.slot.SlotEventHelper;
 import me.dessie.dessielib.enchantmentapi.CEnchantmentAPI;
 import me.dessie.dessielib.inventoryapi.InventoryAPI;
@@ -21,6 +22,7 @@ public class Register {
                 case ENCHANTMENT_API -> CEnchantmentAPI.register(plugin);
                 case RESOURCE_PACK_API -> ResourcePack.register(plugin);
                 case SLOT_UPDATE_EVENT -> SlotEventHelper.register(plugin);
+                case COMMAND_API -> CommandAPI.register(plugin);
             }
         }
     }

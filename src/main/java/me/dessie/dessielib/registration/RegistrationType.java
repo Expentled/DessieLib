@@ -8,6 +8,7 @@ public enum RegistrationType {
     SLOT_UPDATE_EVENT,
     PARTICLE_API,
     RESOURCE_PACK_API,
-    PACKETEER
+    PACKETEER,
+    COMMAND_API
 
 }
