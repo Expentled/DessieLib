@@ -70,6 +70,7 @@ public class CommandAPI {
 
                 //Register the command with the default constructor.
                 if (!XCommand.class.isAssignableFrom(clazz)) continue;
+
                 for (Constructor<?> constructor : clazz.getConstructors()) {
                     if (constructor.getParameterCount() != 0) continue;
 

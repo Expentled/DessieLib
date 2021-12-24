@@ -1,5 +1,6 @@
 package me.dessie.dessielib.commandapi;
 
+import me.dessie.dessielib.core.utils.Colors;
 import org.bukkit.Bukkit;
 import org.bukkit.command.*;
 import org.bukkit.craftbukkit.v1_18_R1.CraftServer;
@@ -22,8 +23,8 @@ public abstract class XCommand implements TabExecutor {
 
     private final String name;
     private final String description;
-    private final String permission;
     private final List<String> aliases = new ArrayList<>();
+    private String permission;
     private String usage;
     private String permissionMessage;
 
@@ -63,6 +64,7 @@ public abstract class XCommand implements TabExecutor {
             PluginCommand command = constructor.newInstance(this.getName(), CommandAPI.getPlugin());
             command.setExecutor(this);
             command.setTabCompleter(this);
+            command.setPermission(this.getPermission());
             command.setDescription(this.getDescription());
             command.setAliases(this.getAliases());
             command.setPermissionMessage(this.getPermissionMessage());
@@ -82,65 +84,36 @@ public abstract class XCommand implements TabExecutor {
      * @param player The Player that ran the command.
      * @param args The arguments that were passed with the command.
      */
-    protected void onCommand(Player player, String[] args) {}
+    protected void execute(Player player, String[] args) {}
 
     /**
      * Overridable method that is called when this command is executed by a {@link ConsoleCommandSender}.
      * @param console The console sender that ran the command.
      * @param args The arguments that were passed with the command.
      */
-    protected void onCommand(ConsoleCommandSender console, String[] args) {}
+    protected void execute(ConsoleCommandSender console, String[] args) {}
 
     /**
      * Overridable method that is called when this command is executed by any sender.
      *
-     * @see XCommand#onCommand(Player, String[]) if you just want a {@link Player} to run this command.
-     * @see XCommand#onCommand(ConsoleCommandSender, String[]) if you just want {@link ConsoleCommandSender} to run this command.
+     * @see XCommand#execute(Player, String[]) if you just want a {@link Player} to run this command.
+     * @see XCommand#execute(ConsoleCommandSender, String[]) if you just want {@link ConsoleCommandSender} to run this command.
      *
      * @param sender The {@link CommandSender} that ran the command.
      * @param args The arguments that were passed with the command.
      */
-    protected void onCommand(CommandSender sender, String[] args) {}
-
-    /**
-     * Overridable method that is called when an argument is tab completed on this command by a {@link Player}.
-     *
-     * The options returned will automatically be matched partially to what they have currently written.
-     *
-     * @param player The Player that executed the tab complete.
-     * @param args The current arguments of the command line.
-     * @return A list of the tab completion options.
-     */
-    protected List<String> onTabComplete(Player player, String[] args) {
-        return new ArrayList<>();
-    }
-
-    /**
-     * Overridable method that is called when an argument is tab completed on this command by a {@link ConsoleCommandSender}.
-     *
-     * The options returned will automatically be matched partially to what they have currently written.
-     *
-     * @param console The console that executed the tab complete.
-     * @param args The current arguments of the command line.
-     * @return A list of the tab completion options.
-     */
-    protected List<String> onTabComplete(ConsoleCommandSender console, String[] args) {
-        return new ArrayList<>();
-    }
+    protected void execute(CommandSender sender, String[] args) {}
 
     /**
      * Overridable method that is called when an argument is tab completed on this command by any sender.
      *
      * The options returned will automatically be matched partially to what they have currently written.
      *
-     * @see XCommand#onTabComplete(Player, String[]) if you just want a {@link Player} that tab completed.
-     * @see XCommand#onTabComplete(ConsoleCommandSender, String[]) if you just want {@link ConsoleCommandSender} that tab completed.
-     *
      * @param sender The {@link CommandSender} that tab completed.
      * @param args The current arguments of the command line.
      * @return A list of the tab completion options.
      */
-    protected List<String> onTabComplete(CommandSender sender, String[] args) {
+    protected List<String> executeTab(CommandSender sender, String[] args) {
         return new ArrayList<>();
     }
 
@@ -204,13 +177,24 @@ public abstract class XCommand implements TabExecutor {
     }
 
     /**
+     * Sets the required permission to run this command.
+     *
+     * @param permission The permission that is required.
+     * @return The XCommand instance
+     */
+    public XCommand setPermission(String permission) {
+        this.permission = permission;
+        return this;
+    }
+
+    /**
      * Sets the permission message for this command
      *
      * @param permissionMessage The permission message
      * @return The XCommand instance
      */
     public XCommand setPermissionMessage(String permissionMessage) {
-        this.permissionMessage = permissionMessage;
+        this.permissionMessage = Colors.color(permissionMessage);
         return this;
     }
 
@@ -219,12 +203,14 @@ public abstract class XCommand implements TabExecutor {
         for(XCommand xCommand : commands) {
             if(xCommand.getName().equalsIgnoreCase(command.getName())) {
                 if(sender instanceof Player player) {
-                    xCommand.onCommand(player, args);
+                    xCommand.execute(player, args);
                 } else if(sender instanceof ConsoleCommandSender console) {
-                    xCommand.onCommand(console, args);
+                    xCommand.execute(console, args);
                 }
 
-                xCommand.onCommand(sender, args);
+                xCommand.execute(sender, args);
+
+                return true;
             }
         }
 
@@ -235,13 +221,8 @@ public abstract class XCommand implements TabExecutor {
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
         for(XCommand xCommand : commands) {
             if(xCommand.getName().equalsIgnoreCase(command.getName())) {
-                if(sender instanceof Player player) {
-                    return StringUtil.copyPartialMatches(args[args.length - 1], xCommand.onTabComplete(player, args), new ArrayList<>());
-                } else if(sender instanceof ConsoleCommandSender console) {
-                    return StringUtil.copyPartialMatches(args[args.length - 1], xCommand.onTabComplete(console, args), new ArrayList<>());
-                }
-
-                return StringUtil.copyPartialMatches(args[args.length - 1], xCommand.onTabComplete(sender, args), new ArrayList<>());
+                List<String> completions = xCommand.executeTab(sender, args);
+                return completions == null ? null : StringUtil.copyPartialMatches(args[args.length - 1], completions, new ArrayList<>());
             }
         }
         return new ArrayList<>();
