@@ -2,6 +2,7 @@ package me.dessie.dessielib.resourcepack.hash;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
+import org.bukkit.Bukkit;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -24,7 +25,7 @@ public class HashUpdater {
         if(!this.compare()) {
             this.hashHex = getHashAsHex(this.getNewFile());
             this.hashBytes = getHashAsBytes(this.getNewFile());
-            System.out.println("[ResourcePackBuilder] ResourcePack modification detected. Automatically updating the SHA-1 Hash to " + this.getHashHex());
+            Bukkit.getLogger().info("[ResourcePackBuilder] ResourcePack modification detected. Automatically updating the SHA-1 Hash to " + this.getHashHex());
         }
     }
 

@@ -1,17 +1,20 @@
 plugins {
     id 'java'
+    id 'java-library'
     id 'maven-publish'
 }
 
 group 'me.dessie'
 version '1.2.1'
 
-//Define the Minecraft Version.
+//Define the Minecraft and SpecialSource Versions.
 String minecraftVersion = "1.18.1-R0.1-SNAPSHOT"
+String specialSourceVersion = "1.11.0"
 
 //Apply the java plugin across subprojects.
 subprojects {
     apply plugin: 'java'
+    apply plugin: 'java-library'
     apply plugin: 'maven-publish'
 }
 
@@ -37,13 +40,16 @@ project.gradle.projectsEvaluated {
             group = 'obfuscate'
             String localMinecraft = "/.m2/repository/org/spigotmc/minecraft-server/"
             String homeDir = project.gradle.gradleUserHomeDir.parent
-            String toolingDir = "${rootProject.projectDir}/tooling/specialsource"
 
             doLast {
+                String toolingDir = project.configurations.compileClasspath.find {
+                    it.name.startsWith("SpecialSource-${specialSourceVersion}-shaded")
+                }
+
                 //First remap to obfuscated
                 exec {
                     commandLine 'java',
-                            '-cp', "${toolingDir}/SpecialSource.jar;${homeDir}/.m2/repository/org/spigotmc/spigot/${minecraftVersion}/spigot-${minecraftVersion}-remapped-mojang.jar", 'net.md_5.specialsource.SpecialSource',
+                            '-cp', "${toolingDir};${homeDir}/.m2/repository/org/spigotmc/spigot/${minecraftVersion}/spigot-${minecraftVersion}-remapped-mojang.jar", 'net.md_5.specialsource.SpecialSource',
                             '-l',
                             '-i', "${buildDir}/libs/${project.name}-${project.version}.jar",
                             '-o', "${buildDir}/libs/${project.name}-obf.jar",
@@ -54,7 +60,7 @@ project.gradle.projectsEvaluated {
                 //Then remap to Spigot
                 exec {
                     commandLine 'java',
-                            '-cp', "${toolingDir}/SpecialSource.jar;${homeDir}/.m2/repository/org/spigotmc/spigot/${minecraftVersion}/spigot-${minecraftVersion}-remapped-obf.jar", 'net.md_5.specialsource.SpecialSource',
+                            '-cp', "${toolingDir};${homeDir}/.m2/repository/org/spigotmc/spigot/${minecraftVersion}/spigot-${minecraftVersion}-remapped-obf.jar", 'net.md_5.specialsource.SpecialSource',
                             '-l',
                             '-i', "${buildDir}/libs/${project.name}-obf.jar",
                             '-o', "${buildDir}/libs/${project.name}-${project.version}.jar",
@@ -78,6 +84,10 @@ project.gradle.projectsEvaluated {
 
             //Only used so Spigot Sources do not have annotation errors.
             compileOnly 'org.jetbrains:annotations:16.0.2'
+
+            //SpecialSource dependency
+            compileOnly "net.md-5:SpecialSource:${specialSourceVersion}:shaded"
+
         }
     }
 }
@@ -85,7 +95,7 @@ project.gradle.projectsEvaluated {
 //Add Core module as a dependency for all other modules, except itself.
 configure(subprojects.findAll {it.name != 'core'}) {
     dependencies {
-        implementation project(":core")
+        api project(":core")
     }
 }
 
@@ -130,6 +140,7 @@ dependencies {
     implementation project(":resourcepack-api")
     implementation project(":particle-api")
     implementation project(":command-api")
+    implementation project(":storage-api")
 }
 
 //Used to create the fat jar

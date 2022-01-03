@@ -1,6 +1,7 @@
 package me.dessie.dessielib.commandapi;
 
 import org.bukkit.plugin.java.JavaPlugin;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -86,6 +87,7 @@ public class CommandAPI {
     /**
      * Register the API to use your plugin.
      * @param yourPlugin Your plugin instance.
+     * @return The CommandAPI instance that was registered.
      */
     public static CommandAPI register(JavaPlugin yourPlugin) {
         return register(yourPlugin, false);

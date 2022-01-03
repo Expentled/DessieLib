@@ -4,7 +4,6 @@ import me.dessie.dessielib.core.utils.Colors;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
@@ -14,7 +13,7 @@ import org.bukkit.scoreboard.Team;
 import javax.annotation.Nullable;
 import java.util.*;
 
-public class ScoreboardAPI implements Listener {
+public class ScoreboardAPI {
 
     static Map<Player, ScoreboardAPI> boards = new HashMap<>();
     private static JavaPlugin plugin;

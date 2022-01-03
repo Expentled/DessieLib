@@ -49,36 +49,6 @@ public abstract class XCommand implements TabExecutor {
         this.permission = permission;
     }
 
-    void register() {
-        //Don't register a command that's already been registered.
-        if(isRegistered()) return;
-
-        commands.add(this);
-
-        //Instantiate the protected PluginCommand constructor.
-        try {
-            Constructor<PluginCommand> constructor = PluginCommand.class.getDeclaredConstructor(String.class, Plugin.class);;
-            constructor.setAccessible(true);
-
-            //Create the PluginCommand
-            PluginCommand command = constructor.newInstance(this.getName(), CommandAPI.getPlugin());
-            command.setExecutor(this);
-            command.setTabCompleter(this);
-            command.setPermission(this.getPermission());
-            command.setDescription(this.getDescription());
-            command.setAliases(this.getAliases());
-            command.setPermissionMessage(this.getPermissionMessage());
-            command.setUsage(this.getUsage());
-
-            map.register(CommandAPI.getPlugin().getName(), command);
-
-        }  catch (InvocationTargetException | InstantiationException | IllegalAccessException | NoSuchMethodException e) {
-            e.printStackTrace();
-        }
-
-        this.registered = true;
-    }
-
     /**
      * Overridable method that is called when this command is executed by a {@link Player}.
      * @param player The Player that ran the command.
@@ -226,5 +196,35 @@ public abstract class XCommand implements TabExecutor {
             }
         }
         return new ArrayList<>();
+    }
+
+    void register() {
+        //Don't register a command that's already been registered.
+        if(isRegistered()) return;
+
+        commands.add(this);
+
+        //Instantiate the protected PluginCommand constructor.
+        try {
+            Constructor<PluginCommand> constructor = PluginCommand.class.getDeclaredConstructor(String.class, Plugin.class);;
+            constructor.setAccessible(true);
+
+            //Create the PluginCommand
+            PluginCommand command = constructor.newInstance(this.getName(), CommandAPI.getPlugin());
+            command.setExecutor(this);
+            command.setTabCompleter(this);
+            command.setPermission(this.getPermission());
+            command.setDescription(this.getDescription());
+            command.setAliases(this.getAliases());
+            command.setPermissionMessage(this.getPermissionMessage());
+            command.setUsage(this.getUsage());
+
+            map.register(CommandAPI.getPlugin().getName(), command);
+
+        }  catch (InvocationTargetException | InstantiationException | IllegalAccessException | NoSuchMethodException e) {
+            e.printStackTrace();
+        }
+
+        this.registered = true;
     }
 }

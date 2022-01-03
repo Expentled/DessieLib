@@ -17,6 +17,10 @@ public class InventoryAPI implements Listener {
     private static boolean registered = false;
     private static JavaPlugin plugin;
 
+    /**
+     * Register the API to use your plugin.
+     * @param yourPlugin Your plugin instance.
+     */
     public static void register(JavaPlugin yourPlugin) {
         if(isRegistered()) {
             throw new IllegalStateException("Cannot register InventoryAPI in " + yourPlugin.getName() + ". Already registered by " + getPlugin().getName());
@@ -97,10 +101,16 @@ public class InventoryAPI implements Listener {
         }
     }
 
+    /**
+     * @return If InventoryAPI has been registered.
+     */
     public static boolean isRegistered() {
         return registered;
     }
 
+    /**
+     * @return The plugin that registered the InventoryAPI.
+     */
     public static JavaPlugin getPlugin() {
         return plugin;
     }

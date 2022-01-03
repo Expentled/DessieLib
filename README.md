@@ -47,11 +47,6 @@ to your plugin.yml.
 
 You can download the standalone JAR file from the latest packages release, the latest [release](https://github.com/Dessie0/DessieLib/releases/tag/1.2.1) or clone the repository and build the JAR yourself.
 
-
-### :ledger: Documentation
-
-The complete JavaDocs can be found [here](https://dessie0.github.io/DessieLib/) <br><br>
-
 ### :iphone: Features
 
 DessieLib provides many features that are cumbersome in CraftBukkit and Spigot, but easily contained within DessieLib.
@@ -494,9 +489,11 @@ public class ExampleCommand extends XCommand {
 </details>
 
 DessieLib also features small API elements such as
-- `ConfigManager`, which is used for basic external configuration loading
 - `Base64`, which can read and write Base64 strings into `ItemStack`s or `List<ItemStack>`
 - `LoopedRunnable` which will run a BukkitRunnable a set number of times before automatically stopping.
 - `SoundUtil` which can grab the Break/Place sound of specific blocks.
 - `Colors` which can parse both & and HEX formats.
- 
+
+### :ledger: Documentation
+
+The complete JavaDocs can be found [here](https://dessie0.github.io/DessieLib/) <br><br>
