@@ -11,6 +11,7 @@ import net.minecraft.world.level.block.state.properties.Property;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.Chest;
 import org.bukkit.craftbukkit.v1_18_R1.block.CraftBlock;
 import org.bukkit.craftbukkit.v1_18_R1.entity.CraftPlayer;
 import org.bukkit.craftbukkit.v1_18_R1.inventory.CraftItemStack;
@@ -456,6 +457,9 @@ public class BlockStateAsset extends Asset implements Listener {
                 return false;
             }
         }
+
+        ((Chest) block.getState()).getBlockInventory();
+
         return true;
     }
 }

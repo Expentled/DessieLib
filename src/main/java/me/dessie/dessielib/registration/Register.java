@@ -8,6 +8,7 @@ import me.dessie.dessielib.packeteer.Packeteer;
 import me.dessie.dessielib.particleapi.ParticleAPI;
 import me.dessie.dessielib.resourcepack.ResourcePack;
 import me.dessie.dessielib.scoreboardapi.ScoreboardAPI;
+import me.dessie.dessielib.storageapi.StorageAPI;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class Register {
@@ -23,6 +24,7 @@ public class Register {
                 case RESOURCE_PACK_API -> ResourcePack.register(plugin);
                 case SLOT_UPDATE_EVENT -> SlotEventHelper.register(plugin);
                 case COMMAND_API -> CommandAPI.register(plugin);
+                case STORAGE_API -> StorageAPI.register(plugin);
             }
         }
     }
