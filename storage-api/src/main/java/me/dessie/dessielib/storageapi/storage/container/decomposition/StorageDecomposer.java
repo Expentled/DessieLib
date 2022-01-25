@@ -39,7 +39,14 @@ public class StorageDecomposer<T> {
             String composedPath = path.replace("%path%", compose);
 
             if(container.isCached(composedPath)) {
-                composedFutures.add(CompletableFuture.completedFuture(container.get(composedPath)));
+                //Get the cached object
+                T cached = container.get(composedPath);
+
+                //Add the composed future with the cached object.
+                composedFutures.add(CompletableFuture.completedFuture(cached));
+
+                //Make sure the completed path is also notified of this completion, since we're not actually completing via retrieve.
+                recomposedObject.getCompletedPath().get(compose).complete(cached);
             } else {
                 CompletableFuture<Object> future = recomposedObject.getRecomposedMap().get(compose).apply(composedPath);
                 composedFutures.add(future);

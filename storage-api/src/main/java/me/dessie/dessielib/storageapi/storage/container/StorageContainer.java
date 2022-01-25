@@ -11,7 +11,6 @@ import me.dessie.dessielib.storageapi.storage.container.hooks.StoreHook;
 import me.dessie.dessielib.storageapi.storage.container.settings.StorageSettings;
 import org.bukkit.Bukkit;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -131,7 +130,7 @@ public abstract class StorageContainer {
      * @param path The path to store the data to.
      * @param data The data to store in the file format.
      */
-    public void store(String path, Object data) throws IOException {
+    public void store(String path, Object data) {
         Bukkit.getScheduler().runTaskAsynchronously(StorageAPI.getPlugin(), () -> {
             StorageDecomposer<?> decomposer = getDecomposer(data.getClass());
             if(decomposer != null) {
@@ -179,7 +178,7 @@ public abstract class StorageContainer {
      * @throws ClassCastException If the object at the retrieved path is not of type T.
      */
     @SuppressWarnings("unchecked")
-    public <T> CompletableFuture<T> retrieve(Class<T> type, String path) throws ClassCastException {
+    public <T> CompletableFuture<T> retrieve(Class<T> type, String path) {
         CompletableFuture<T> future = new CompletableFuture<>();
         Bukkit.getScheduler().runTaskAsynchronously(StorageAPI.getPlugin(), () -> {
             StorageDecomposer<?> decomposer = getDecomposer(type);
@@ -194,7 +193,7 @@ public abstract class StorageContainer {
                     data = CompletableFuture.completedFuture((T) this.retrieveHook().getFunction().apply(path));
                     this.retrieveHook().complete();
 
-                    //Catch the object
+                    //Cache the object
                     data.thenAccept(obj -> this.cache(path, obj));
                 }
             }
@@ -217,7 +216,7 @@ public abstract class StorageContainer {
      * @throws ClassCastException If the object returned is not of type T.
      */
     @SuppressWarnings("unchecked")
-    public <T> CompletableFuture<T> retrieve(String path) throws ClassCastException {
+    public <T> CompletableFuture<T> retrieve(String path) {
         if(this.isCached(path)) {
             return CompletableFuture.completedFuture(this.get(path));
         }

@@ -14,9 +14,13 @@ public class RecomposedObject<T> {
 
     public RecomposedObject<T> addRecomposeKey(String path, Function<String, CompletableFuture<Object>> data) {
         this.getRecomposedMap().putIfAbsent(path, data.andThen(after -> {
-            pathFutures.put(path, after);
+            this.getCompletedPath().put(path, after);
             return after;
         }));
+
+        //Add an empty completable future, in-case the path is cached.
+        this.getCompletedPath().put(path, new CompletableFuture<>());
+
         return this;
     }
 
@@ -33,12 +37,11 @@ public class RecomposedObject<T> {
     public T complete() {
         return this.completeFunction.apply(this);
     }
-    public Object getCompletedObject(String path) {
-        return pathFutures.get(path).join();
-    }
-    public Set<String> getKeys() { return this.getRecomposedMap().keySet(); }
 
+    public Object getCompletedObject(String path) {return pathFutures.get(path).join();}
+    public Set<String> getKeys() { return this.getRecomposedMap().keySet(); }
     public Map<String, Function<String, CompletableFuture<Object>>> getRecomposedMap() {
         return recomposedMap;
     }
+    public Map<String, CompletableFuture<Object>> getCompletedPath() {return pathFutures;}
 }

@@ -313,7 +313,7 @@ public class MySQLContainer extends StorageContainer {
      */
     @Deprecated
     @Override
-    public void store(String path, Object data) throws IOException {
+    public void store(String path, Object data) {
         super.store(path, data);
     }
 
