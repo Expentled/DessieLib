@@ -2,6 +2,7 @@ package me.dessie.dessielib.storageapi.storage.container.decomposition;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -13,6 +14,9 @@ public class RecomposedObject<T> {
     private final Map<String, CompletableFuture<Object>> pathFutures = new HashMap<>();
 
     public RecomposedObject<T> addRecomposeKey(String path, Function<String, CompletableFuture<Object>> data) {
+        Objects.requireNonNull(path, "Cannot add null path!");
+        Objects.requireNonNull(data, "The recompose function cannot be null!");
+
         this.getRecomposedMap().putIfAbsent(path, data.andThen(after -> {
             this.getCompletedPath().put(path, after);
             return after;
@@ -21,6 +25,16 @@ public class RecomposedObject<T> {
         //Add an empty completable future, in-case the path is cached.
         this.getCompletedPath().put(path, new CompletableFuture<>());
 
+        return this;
+    }
+
+    public RecomposedObject<T> addCompletedRecomposeKey(String path, Function<String, Object> data) {
+        this.getRecomposedMap().putIfAbsent(path, data.andThen(after -> {
+            this.getCompletedPath().put(path, CompletableFuture.completedFuture(after));
+            return CompletableFuture.completedFuture(after);
+        }));
+
+        this.getCompletedPath().put(path, new CompletableFuture<>());
         return this;
     }
 

@@ -12,10 +12,12 @@ import me.dessie.dessielib.storageapi.storage.container.settings.StorageSettings
 import org.bukkit.Bukkit;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public abstract class StorageContainer {
 
@@ -23,12 +25,6 @@ public abstract class StorageContainer {
 
     private final StorageCache cache;
     private final StorageSettings settings;
-
-    //Temporarily stores all things that were changed and will need to be pushed to the data source.
-    private final Map<String, Object> setCache = new HashMap<>();
-
-    //List of all paths that have been removed using the remove method.
-    private final List<String> removeCache = new ArrayList<>();
 
     /**
      * Creates a StorageContainer with a default {@link StorageSettings}.
@@ -49,26 +45,19 @@ public abstract class StorageContainer {
             throw new NullPointerException("You need to register your plugin before creating a StorageContainer!");
         }
 
+        Objects.requireNonNull(settings, "Settings cannot be null!");
+
         this.settings = settings;
         this.cache = new StorageCache(this.getSettings().getCacheDuration());
 
         //The repeating task to push add modified changes to the data source.
         //Uses the settings for the length.
-        Bukkit.getScheduler().runTaskTimer(StorageAPI.getPlugin(), () -> {
-            if(this.getSetCache().isEmpty()) return;
 
-            //Store and Delete the caches.
-            this.getSetCache().keySet().forEach(path -> {
-                this.storeHook().getConsumer().accept(path, this.getSetCache().get(path));
-            });
-
-            this.getRemoveCache().forEach(path -> {
-                this.deleteHook().getConsumer().accept(path);
-            });
-
-            this.getSetCache().clear();
-            this.getRemoveCache().clear();
-        }, this.getSettings().getUpdate() * 20L, this.getSettings().getUpdate() * 20L);
+        if(this.getSettings().getUpdate() > 0) {
+            Bukkit.getScheduler().runTaskTimer(StorageAPI.getPlugin(), () -> {
+                this.getCache().flush(this);
+            }, this.getSettings().getUpdate() * 20L, this.getSettings().getUpdate() * 20L);
+        }
     }
 
     protected abstract StoreHook storeHook();
@@ -85,6 +74,8 @@ public abstract class StorageContainer {
      */
     @SuppressWarnings("unchecked")
     public <T> T get(String path) throws ClassCastException {
+        Objects.requireNonNull(path, "Cannot get from null path!");
+
         CachedObject cachedObject = this.getCache().get(path);
         return cachedObject == null ? null : (T) cachedObject.getObject();
     }
@@ -101,8 +92,10 @@ public abstract class StorageContainer {
      * @param data The data to set.
      */
     public void set(String path, Object data) {
-        this.getSetCache().put(path, data);
-        this.getRemoveCache().remove(path);
+        Objects.requireNonNull(path, "Cannot set to null path!");
+
+        this.getCache().getSetCache().put(path, data);
+        this.getCache().getRemoveCache().remove(path);
     }
 
     /**
@@ -116,10 +109,12 @@ public abstract class StorageContainer {
      * @param path The path of the data to remove.
      */
     public void remove(String path) {
-        this.getRemoveCache().add(path);
+        Objects.requireNonNull(path, "Cannot remove from null path!");
+
+        this.getCache().getRemoveCache().add(path);
 
         //Don't need to set anything, since now it was removed.
-        this.getSetCache().remove(path);
+        this.getCache().getSetCache().remove(path);
     }
 
     /**
@@ -131,6 +126,8 @@ public abstract class StorageContainer {
      * @param data The data to store in the file format.
      */
     public void store(String path, Object data) {
+        Objects.requireNonNull(path, "Cannot store to null path!");
+
         Bukkit.getScheduler().runTaskAsynchronously(StorageAPI.getPlugin(), () -> {
             StorageDecomposer<?> decomposer = getDecomposer(data.getClass());
             if(decomposer != null) {
@@ -145,6 +142,13 @@ public abstract class StorageContainer {
             }
             this.storeHook().complete();
         });
+
+        //Cache the data
+        this.cache(path, data);
+
+        //No need to update these later, since this should overwrite them.
+        this.getCache().getSetCache().remove(path);
+        this.getCache().getRemoveCache().remove(path);
     }
 
     /**
@@ -155,8 +159,10 @@ public abstract class StorageContainer {
      * @param path The path to remove.
      */
     public void delete(String path) {
-        this.getRemoveCache().remove(path);
-        this.getSetCache().remove(path);
+        Objects.requireNonNull(path, "Cannot delete from null path!");
+
+        this.getCache().getRemoveCache().remove(path);
+        this.getCache().getSetCache().remove(path);
 
         Bukkit.getScheduler().runTaskAsynchronously(StorageAPI.getPlugin(), () -> {
             this.deleteHook().getConsumer().accept(path);
@@ -166,8 +172,85 @@ public abstract class StorageContainer {
 
     /**
      * Retrieves the object directly from the data source with explicit casting.
-     * This method is executed asynchronously.
      * If you want to retrieve a {@link StorageDecomposer}, you will need to use this method and provide the type.
+     *
+     * Note: This method is blocking, and will block for up to 5 seconds.
+     * It is highly recommended to only use this method if you know your data structure will not block
+     * For example, {@link me.dessie.dessielib.storageapi.storage.format.flatfile.YAMLContainer}s should be safe to use this method.
+     *
+     * @see StorageContainer#retrieve(String) to get the value with implicit casting.
+     * @see StorageContainer#retrieveAsync(Class, String) for retrieving data asynchronously.
+     *
+     * @param <T> The explicit type that will be cast to.
+     * @param type The type of Object to get. If this Object has a {@link StorageDecomposer}, it will be used.
+     * @param path The path to retrieve.
+     * @return The cast object from the path, or null if it doesn't exist.
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T retrieve(Class<T> type, String path) {
+        Objects.requireNonNull(path, "Cannot retrieve from null path!");
+        Objects.requireNonNull(type, "Type must be provided");
+
+        StorageDecomposer<?> decomposer = getDecomposer(type);
+        T data;
+        if (decomposer != null) {
+            //Only append %path% if it doesn't already exist in the String.
+            //Also needs to be ran async so it doesn't block itself, very smart
+            CompletableFuture<CompletableFuture<T>> future = CompletableFuture.supplyAsync(() -> {
+                return (CompletableFuture<T>) decomposer.applyRecompose(this, path.contains("%path%") ? path : path + ".%path%");
+            });
+
+            try {
+                //Wait for the asynchronous future to be completed.
+                return future.get().get(5, TimeUnit.SECONDS);
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                e.printStackTrace();
+            }
+        } else {
+            if (this.isCached(path)) {
+                data = this.get(path);
+            } else {
+                data = (T) this.retrieveHook().getFunction().apply(path);
+                this.retrieveHook().complete();
+
+                //Cache the object
+                this.cache(path, data);
+            }
+            return data;
+        }
+        return null;
+    }
+
+    /**
+     * Retrieves an object directly from the data source with implicit casting.
+     * Note: This method will not recompose {@link StorageDecomposer}s.
+     *
+     * @see StorageContainer#retrieve(Class, String) for retrieving with explicit casting, or to recompose decomposed objects.
+     * @see StorageContainer#retrieveAsync(String) for retrieving data asynchronously.
+     *
+     * @param <T> The implicit type that will be cast to.
+     * @param path The path to retrieve.
+     * @return The cast object from the path, or null if it doesn't exist.
+     * @throws ClassCastException If the object returned is not of type T.
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T retrieve(String path) {
+        Objects.requireNonNull(path, "Cannot retrieve from null path!");
+
+        if(this.isCached(path)) {
+            return this.get(path);
+        }
+
+        T obj = (T) this.retrieveHook().getFunction().apply(path);
+        this.retrieveHook().complete();
+        this.cache(path, obj);
+        return obj;
+    }
+
+    /**
+     * Retrieves the object directly from the data source with explicit casting.
+     * If you want to retrieve a {@link StorageDecomposer}, you will need to use this method and provide the type.
+     * This method is executed asynchronously, and the future will be completed when the data has been returned.
      *
      * @see StorageContainer#retrieve(String) to get the value with implicit casting.
      *
@@ -177,35 +260,13 @@ public abstract class StorageContainer {
      * @return The cast object from the path, or null if it doesn't exist.
      * @throws ClassCastException If the object at the retrieved path is not of type T.
      */
-    @SuppressWarnings("unchecked")
-    public <T> CompletableFuture<T> retrieve(Class<T> type, String path) {
-        CompletableFuture<T> future = new CompletableFuture<>();
-        Bukkit.getScheduler().runTaskAsynchronously(StorageAPI.getPlugin(), () -> {
-            StorageDecomposer<?> decomposer = getDecomposer(type);
-            CompletableFuture<T> data;
-            if(decomposer != null) {
-                //Only append %path% if it doesn't already exist in the String.
-                data = (CompletableFuture<T>) decomposer.applyRecompose(this, path.contains("%path%") ? path : path + ".%path%");
-            } else {
-                if(this.isCached(path)) {
-                    data = CompletableFuture.completedFuture(this.get(path));
-                } else {
-                    data = CompletableFuture.completedFuture((T) this.retrieveHook().getFunction().apply(path));
-                    this.retrieveHook().complete();
-
-                    //Cache the object
-                    data.thenAccept(obj -> this.cache(path, obj));
-                }
-            }
-
-            data.thenAccept(future::complete);
-        });
-        return future;
+    public <T> CompletableFuture<T> retrieveAsync(Class<T> type, String path) {
+        return CompletableFuture.supplyAsync(() -> this.retrieve(type, path));
     }
 
     /**
      * Retrieves an object directly from the data source with implicit casting.
-     * This method is executed asynchronously.
+     * This method is executed asynchronously, and the future will be completed when the data has been returned.
      * Note: This method will not recompose {@link StorageDecomposer}s.
      *
      * @see StorageContainer#retrieve(Class, String) for retrieving with explicit casting, or to recompose decomposed objects.
@@ -215,20 +276,8 @@ public abstract class StorageContainer {
      * @return The cast object from the path, or null if it doesn't exist.
      * @throws ClassCastException If the object returned is not of type T.
      */
-    @SuppressWarnings("unchecked")
-    public <T> CompletableFuture<T> retrieve(String path) {
-        if(this.isCached(path)) {
-            return CompletableFuture.completedFuture(this.get(path));
-        }
-
-        CompletableFuture<T> future = new CompletableFuture<>();
-        Bukkit.getScheduler().runTaskAsynchronously(StorageAPI.getPlugin(), () -> {
-            T obj = (T) this.retrieveHook().getFunction().apply(path);
-            this.retrieveHook().complete();
-            this.cache(path, obj);
-            future.complete(obj);
-        });
-        return future;
+    public <T> CompletableFuture<T> retrieveAsync(String path) {
+        return CompletableFuture.supplyAsync(() -> this.retrieve(path));
     }
 
     /**
@@ -238,6 +287,7 @@ public abstract class StorageContainer {
      * @param object The object to cache
      */
     public void cache(String path, Object object) {
+        Objects.requireNonNull(path, "Cannot cache null path!");
         this.getCache().cache(path, object);
     }
 
@@ -248,7 +298,7 @@ public abstract class StorageContainer {
      * @return If the path is cached.
      */
     public boolean isCached(String path) {
-        return this.getCache().isCached(path) || this.getSetCache().containsKey(path);
+        return this.getCache().isCached(path);
     }
 
     /**
@@ -269,21 +319,23 @@ public abstract class StorageContainer {
     }
 
     /**
-     * Returns the cache of objects that have been set and not updated to the data structure.
-     * This cache is cleared once the cache has been pushed to the structure.
-     * @return The current set cache
+     * Updates the {@link StorageContainer} with the set and remove caches.
+     * After flushing, these maps will be cleared.
+     *
+     * Flushing will not empty the cached data, only the data that needs to be updated to the structure.
+     *
+     * @see StorageContainer#set(String, Object) for adding objects into the Set cache.
+     * @see StorageContainer#remove(String) for adding paths into the Remove cache.
      */
-    public Map<String, Object> getSetCache() {
-        return setCache;
+    public void flush() {
+        this.getCache().flush(this);
     }
 
     /**
-     * Returns the cache of objects that have been removed and not updated to the data structure.
-     * This cache is cleared once the cache has been pushed to the structure.
-     * @return The current remove cache
+     * Clears the cache
      */
-    public List<String> getRemoveCache() {
-        return removeCache;
+    public void clearCache() {
+        this.getCache().clearCache();
     }
 
     public static void addStorageDecomposer(StorageDecomposer<?> decomposer) {

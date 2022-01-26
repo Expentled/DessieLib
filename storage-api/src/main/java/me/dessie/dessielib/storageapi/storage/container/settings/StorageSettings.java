@@ -1,5 +1,6 @@
 package me.dessie.dessielib.storageapi.storage.container.settings;
 
+import me.dessie.dessielib.storageapi.storage.cache.StorageCache;
 import me.dessie.dessielib.storageapi.storage.container.StorageContainer;
 
 public class StorageSettings {
@@ -17,7 +18,9 @@ public class StorageSettings {
     /**
      * Creates a settings instance for a {@link StorageContainer} with the cache duration and 5-minute update timer.
      *
-     * @param cacheDuration The cache duration in seconds.
+     * @param cacheDuration The cache duration in seconds. Use -1 to cache an object forever.
+     *                      If -1 is used, {@link StorageContainer#clearCache()} should be manually
+     *                      called periodically to avoid memory leaks.
      */
     public StorageSettings(int cacheDuration) {
         this(cacheDuration, 300);
@@ -26,8 +29,12 @@ public class StorageSettings {
     /**
      * Creates a settings instance for a {@link StorageContainer} with the provided cache duration and update timer.
      *
-     * @param cacheDuration The cache duration in seconds.
-     * @param update The update timer in seconds.
+     * @param cacheDuration The cache duration in seconds. Use -1 to cache an object forever.
+     *                      If -1 is used, {@link StorageContainer#clearCache()} should be manually
+     *                      called periodically to avoid memory leaks.
+     *
+     * @param update The update timer in seconds. Set to -1 to never automatically update.
+     *               If -1 is used, you will need to manually call {@link StorageContainer#flush()}
      */
     public StorageSettings(int cacheDuration, int update) {
         this.cacheDuration = cacheDuration;
@@ -36,7 +43,7 @@ public class StorageSettings {
 
     /**
      * Returns how long, in seconds, a {@link me.dessie.dessielib.storageapi.storage.cache.CachedObject} will be cached within
-     * a {@link StorageContainer}'s {@link me.dessie.dessielib.storageapi.storage.cache.StorageCache}.
+     * a {@link StorageContainer}'s {@link StorageCache}.
      *
      * Once this timer has expired, the data will have to be retrieved from the data structure again.
      *
@@ -53,7 +60,7 @@ public class StorageSettings {
      * Once this timer expires, the set cache is pushed and is cleared.
      *
      * @see StorageContainer#store(String, Object) how this items are stored into the data structure.
-     * @see StorageContainer#getSetCache() to get the items that will be stored.
+     * @see StorageCache#getSetCache() to get the items that will be stored.
      *
      * @return The update time.
      */

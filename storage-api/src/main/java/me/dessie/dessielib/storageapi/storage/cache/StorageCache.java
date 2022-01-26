@@ -1,14 +1,21 @@
 package me.dessie.dessielib.storageapi.storage.cache;
 
-import java.util.HashMap;
-import java.util.Map;
+import me.dessie.dessielib.storageapi.storage.container.StorageContainer;
+
+import java.util.*;
 
 public class StorageCache {
     private final Map<String, CachedObject> cache = new HashMap<>();
     private final int cacheDuration;
 
+    //Temporarily stores all things that were changed and will need to be pushed to the data source.
+    private final Map<String, Object> setCache = new HashMap<>();
+
+    //List of all paths that have been removed using the remove method.
+    private final List<String> removeCache = new ArrayList<>();
+
     /**
-     * @param cacheDuration How long to cache the object for
+     * @param cacheDuration How long to cache the object for. Set to -1 to cache forever
      */
     public StorageCache(int cacheDuration) {
         this.cacheDuration = cacheDuration;
@@ -46,16 +53,6 @@ public class StorageCache {
     }
 
     /**
-     * Returns if the provided path is cached.
-     *
-     * @param path The path to check.
-     * @return If the path is cached.
-     */
-    public boolean isCached(String path) {
-        return this.getCache().containsKey(path);
-    }
-
-    /**
      * Removes a path from the cache.
      *
      * @param path The path to remove.
@@ -82,13 +79,50 @@ public class StorageCache {
     }
 
     /**
-     * Clears the entire cache.
+     * Updates the {@link StorageContainer} with the set and remove caches.
+     * After flushing, these maps will be cleared.
+     *
+     * Flushing will not empty the cached data, only the data that needs to be updated to the structure.
+     *
+     * @see StorageContainer#set(String, Object) for adding objects into the Set cache.
+     * @see StorageContainer#remove(String) for adding paths into the Remove cache.
+     *
+     * @param container The StorageContainer to flush the cache to.
+     */
+    public void flush(StorageContainer container) {
+        if(this.getSetCache().isEmpty() && this.getRemoveCache().isEmpty()) return;
+
+        //Store and Delete the caches.
+        this.getSetCache().keySet().forEach(path -> container.store(path, this.getSetCache().get(path)));
+
+
+        //We don't have to clear the setCache and removeCache because delete does that already
+        //We also can't use a for loop since that would throw a ConcurrentModification
+        Iterator<String> iterator = this.getRemoveCache().iterator();
+        while(iterator.hasNext()) {
+            container.delete(iterator.next());
+        }
+    }
+
+    /**
+     * Returns if the provided path is cached.
+     *
+     * @param path The path to check.
+     * @return If the path is cached.
+     */
+    public boolean isCached(String path) {
+        return this.getCache().containsKey(path) || this.getSetCache().containsKey(path);
+    }
+
+    /**
+     * Clears the cache.
      */
     public void clearCache() {
         for(CachedObject object : this.getCache().values()) {
-            object.getTask().cancel();
+            if(object.getTask() != null) {
+                object.getTask().cancel();
+            }
         }
-
         this.getCache().clear();
     }
 
@@ -109,5 +143,23 @@ public class StorageCache {
      */
     public Map<String, CachedObject> getCache() {
         return cache;
+    }
+
+    /**
+     * Returns the cache of objects that have been set and not updated to the data structure.
+     * This cache is cleared once the cache has been pushed to the structure.
+     * @return The current set cache
+     */
+    public Map<String, Object> getSetCache() {
+        return setCache;
+    }
+
+    /**
+     * Returns the cache of objects that have been removed and not updated to the data structure.
+     * This cache is cleared once the cache has been pushed to the structure.
+     * @return The current remove cache
+     */
+    public List<String> getRemoveCache() {
+        return removeCache;
     }
 }

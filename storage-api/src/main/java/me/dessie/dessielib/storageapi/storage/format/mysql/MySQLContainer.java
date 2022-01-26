@@ -12,12 +12,8 @@ import me.dessie.dessielib.storageapi.storage.format.mysql.struct.table.Table;
 import org.bukkit.Bukkit;
 import oshi.util.tuples.Pair;
 
-import java.io.IOException;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 
@@ -42,45 +38,74 @@ public class MySQLContainer extends StorageContainer {
         this.set(path.getA(), path.getB());
     }
 
-    public void store(Table table, Column column, Object data, ColumnPredicate... predicates) throws IOException {
+    public void store(Table table, Column column, Object data, ColumnPredicate... predicates) {
+        Objects.requireNonNull(table, "Cannot store to null table!");
+        Objects.requireNonNull(column, "Cannot store to null column!");
+
         this.store(table, new HashMap<>() {{ put(column, data); }}, predicates);
     }
 
-    public void store(Table table, Map<Column, Object> columns, ColumnPredicate... predicates) throws IOException {
+    public void store(Table table, Map<Column, Object> columns, ColumnPredicate... predicates) {
+        Objects.requireNonNull(table, "Cannot store to null table!");
+        Objects.requireNonNull(columns, "Cannot store to null columns!");
+        if(columns.isEmpty()) { throw new IllegalArgumentException("You must provide atleast one column to store to!"); }
+
         Pair<String, Object[]> path = createPath(table, columns, predicates);
         super.store(path.getA(), path.getB());
     }
 
     public void remove(Table table, ColumnPredicate... predicates) {
+        Objects.requireNonNull(table, "Cannot remove from null table!");
+
         Pair<String, Object[]> path = createPath(table, null, predicates);
         super.remove(path.getA());
     }
 
-    public void delete(Table table, ColumnPredicate... predicates) throws IOException {
+    public void delete(Table table, ColumnPredicate... predicates) {
+        Objects.requireNonNull(table, "Cannot delete from null table!");
+
         Pair<String, Object[]> path = createPath(table, null, predicates);
         super.delete(path.getA());
     }
 
     public <T> T get(Table table, Column column, ColumnPredicate... predicates) {
+        Objects.requireNonNull(table, "Cannot get from null table!");
+        Objects.requireNonNull(column, "Cannot get from null column!");
+
         Pair<String, Object[]> path = createPath(table, new HashMap<>() {{ put(column, 0); }}, predicates);
         return super.get(path.getA());
     }
 
-    public <T> CompletableFuture<T> retrieve(Table table, Column column, ColumnPredicate... predicates) {
+    public <T> T retrieve(Table table, Column column, ColumnPredicate... predicates) {
+        Objects.requireNonNull(table, "Cannot retrieve from null table!");
+        Objects.requireNonNull(column, "Cannot retrieve from null column!");
+
         Pair<String, Object[]> path = createPath(table, new HashMap<>() {{ put(column, 0); }}, predicates);
         return super.retrieve(path.getA());
     }
 
-    public <T> CompletableFuture<T> retrieve(Class<T> type, Table table, ColumnPredicate... predicates) {
+    public <T> T retrieve(Class<T> type, Table table, ColumnPredicate... predicates) {
+        Objects.requireNonNull(type, "Cannot retrieve null type!");
+        Objects.requireNonNull(table, "Cannot retrieve from null table!");
+
         if(StorageContainer.getDecomposer(type) != null) {
             StringBuilder predicateBuilder = new StringBuilder();
             for(ColumnPredicate predicate : predicates) {
+                if(predicate == null) continue;
                 predicateBuilder.append(predicate.column().getName()).append("=").append(predicate.getData()).append(";");
             }
 
             predicateBuilder.setLength(predicateBuilder.length() - 1);
             return super.retrieve(type, table.getName() + "." + predicateBuilder + "#%path%");
         } else throw new IllegalArgumentException("A decomposer for type " + type.getSimpleName() + " does not exist.");
+    }
+
+    public <T> CompletableFuture<T> retrieveAsync(Table table, Column column, ColumnPredicate... predicates) {
+        return CompletableFuture.supplyAsync(() -> this.retrieve(table, column, predicates));
+    }
+
+    public <T> CompletableFuture<T> retrieveAsync(Class<T> type, Table table, ColumnPredicate... predicates) {
+        return CompletableFuture.supplyAsync(() -> this.retrieve(type, table, predicates));
     }
 
     @Override
@@ -253,8 +278,10 @@ public class MySQLContainer extends StorageContainer {
     private Pair<String, Object[]> createPath(Table table, Map<Column, Object> columns, ColumnPredicate... predicates) {
         StringBuilder path = new StringBuilder(table.getName() + ".");
         for(ColumnPredicate predicate : predicates) {
+            if(predicate == null) continue;
             path.append(predicate.getColumn().getName()).append("=").append(predicate.getData().toString()).append(";");
         }
+
         path.setLength(path.length() - 1);
 
         if(columns != null) {

@@ -74,12 +74,20 @@ public class Table {
         return this.getContainer().get(this, column, predicates);
     }
 
-    public <T> CompletableFuture<T> retrieve(Column column, ColumnPredicate... predicates) {
+    public <T> T retrieve(Column column, ColumnPredicate... predicates) {
         return this.getContainer().retrieve(this, column, predicates);
     }
 
-    public <T> CompletableFuture<T> retrieve(Class<T> type, ColumnPredicate... predicates) {
+    public <T> T retrieve(Class<T> type, ColumnPredicate... predicates) {
         return this.getContainer().retrieve(type, this, predicates);
+    }
+
+    public <T> CompletableFuture<T> retrieveAsync(Column column, ColumnPredicate... predicates) {
+        return this.getContainer().retrieveAsync(this, column, predicates);
+    }
+
+    public <T> CompletableFuture<T> retrieveAsync(Class<T> type, ColumnPredicate... predicates) {
+        return this.getContainer().retrieveAsync(type, this, predicates);
     }
 
     public Column getColumn(String name) {return this.columns.stream().filter(column -> column.getName().equals(name)).findAny().orElse(null);}

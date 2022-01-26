@@ -22,9 +22,11 @@ public class CachedObject {
         this.object = object;
         this.duration = duration;
 
-        this.task = Bukkit.getScheduler().runTaskLater(StorageAPI.getPlugin(), () -> {
-            this.getCache().remove(this);
-        }, duration * 20L);
+        if(duration > 0) {
+            this.task = Bukkit.getScheduler().runTaskLater(StorageAPI.getPlugin(), () -> {
+                this.getCache().remove(this);
+            }, duration * 20L);
+        } else this.task = null;
     }
 
     /**
