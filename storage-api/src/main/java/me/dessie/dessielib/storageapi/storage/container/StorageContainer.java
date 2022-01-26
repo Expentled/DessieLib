@@ -161,13 +161,14 @@ public abstract class StorageContainer {
     public void delete(String path) {
         Objects.requireNonNull(path, "Cannot delete from null path!");
 
-        this.getCache().getRemoveCache().remove(path);
-        this.getCache().getSetCache().remove(path);
-
         Bukkit.getScheduler().runTaskAsynchronously(StorageAPI.getPlugin(), () -> {
             this.deleteHook().getConsumer().accept(path);
             this.deleteHook().complete();
         });
+
+        //This should overwrite anything we've already cached to do.
+        this.getCache().getRemoveCache().remove(path);
+        this.getCache().getSetCache().remove(path);
     }
 
     /**

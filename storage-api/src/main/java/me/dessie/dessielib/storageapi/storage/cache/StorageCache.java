@@ -92,15 +92,18 @@ public class StorageCache {
     public void flush(StorageContainer container) {
         if(this.getSetCache().isEmpty() && this.getRemoveCache().isEmpty()) return;
 
-        //Store and Delete the caches.
-        this.getSetCache().keySet().forEach(path -> container.store(path, this.getSetCache().get(path)));
-
+        List<String> tempRemoveCache = new ArrayList<>(this.getRemoveCache());
 
         //We don't have to clear the setCache and removeCache because delete does that already
         //We also can't use a for loop since that would throw a ConcurrentModification
-        Iterator<String> iterator = this.getRemoveCache().iterator();
-        while(iterator.hasNext()) {
-            container.delete(iterator.next());
+        Iterator<String> it = this.getSetCache().keySet().iterator();
+        while(it.hasNext()) {
+            String path = it.next();
+            container.store(path, this.getSetCache().get(path));
+        }
+
+        for(String path : tempRemoveCache) {
+            container.delete(path);
         }
     }
 
