@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class ItemAsset extends Asset {
 
-    private final File texture;
+    private final List<TextureAsset> textures;
     private final File modelJson;
     private final ItemStack item;
     private int customModelId;
@@ -33,37 +33,27 @@ public class ItemAsset extends Asset {
     private final File minecraftItemModelFolder;
 
     /**
-     * @param texture The texture png that should be applied to the ItemStack.
      * @param item The {@link ItemStack} to apply the texture to.
+     * @param texture The texture png that will be applied to the ItemStack.
      */
-    public ItemAsset(File texture, ItemStack item) {
-        this(texture, null, item);
-    }
-
-    /**
-     *
-     * @param texture The texture png that should be applied to the ItemStack.
-     * @param modelJson A default model.json that applies to this ItemStack. Can be used if you're creating a 3D model.
-     *                  Can also be null if the texture should be applied without a model.
-     * @param item The {@link ItemStack} to apply the texture to.
-     */
-    public ItemAsset(File texture, File modelJson, ItemStack item) {
-        this(Objects.requireNonNull(texture.getName()).split("\\.png")[0], texture, modelJson, item);
+    public ItemAsset(String name, ItemStack item, TextureAsset texture) {
+        this(name, item, null, texture);
     }
 
     /**
      * @param name The name of the asset.
-     * @param texture The texture png that should be applied to the ItemStack.
      * @param modelJson A default model.json that applies to this ItemStack. Can be used if you're creating a 3D model.
      *                  Can also be null if the texture should be applied without a model.
      * @param item The {@link ItemStack} to apply the texture to.
+     * @param textures The texture pngs that should be applied to the ItemStack on the model.
+     *                 You should key the texture assets according to the texture references inside your model json.
      */
-    public ItemAsset(String name, File texture, @Nullable File modelJson, ItemStack item) {
+    public ItemAsset(String name, ItemStack item, @Nullable File modelJson, TextureAsset... textures) {
         super(name);
-        if(texture == null || !texture.exists()) throw new IllegalArgumentException("Texture is null or does not exist");
+        if(textures == null || textures.length == 0) throw new IllegalArgumentException("You must provide atleast 1 texture for this asset!");
         if(item == null || item.getItemMeta() == null) throw new IllegalArgumentException("Item & ItemMeta cannot be null");
 
-        this.texture = texture;
+        this.textures = Arrays.asList(textures);
         this.item = item;
         this.modelJson = modelJson;
 
@@ -81,12 +71,14 @@ public class ItemAsset extends Asset {
                     this.createDirectories(asset.getMinecraftItemModelFolder(), asset.getResourceItemModelFolder(), asset.getResourceItemTextureFolder());
 
                     //Copy the texture png file to it's proper folder.
-                    FileUtils.copyFile(asset.getTexture(), new File(asset.getResourceItemTextureFolder() + "/" + asset.getTexture().getName()));
+                    for(TextureAsset textureAsset : asset.getTextures()) {
+                        FileUtils.copyFile(textureAsset.getTextureFile(), new File(asset.getResourceItemTextureFolder() + "/" + textureAsset.getTextureFile().getName()));
+                    }
                 }
             }
 
             @Override
-            public void generate(ResourcePackBuilder builder, List<Asset> assetList) throws IOException {
+            public void generate(ResourcePackBuilder builder, List<Asset> assetList) {
                 List<ItemAsset> assets = this.cast(ItemAsset.class, assetList);
 
                 //Generate the Minecraft overrides.
@@ -114,6 +106,7 @@ public class ItemAsset extends Asset {
                     for(ItemAsset asset : materials.get(material)) {
                         String materialName = asset.getItem().getType().name().toLowerCase();
                         File assetFile = new File(asset.getMinecraftItemModelFolder(), materialName + ".json");
+
                         //Generate the .json for the asset with the appropriate custom model id.
                         JsonObject object = new JsonObjectBuilder().add("parent", "minecraft:item/generated")
                                 .add("textures", new JsonObjectBuilder().add("layer0", "minecraft:item/" + materialName).getObject())
@@ -127,13 +120,24 @@ public class ItemAsset extends Asset {
                     }
                 }
 
-
                 for(ItemAsset asset : assets) {
                     File customModel = new File(asset.getResourceItemModelFolder(), asset.getName() + ".json");
                     if(asset.getModel() == null) {
+
+                        //If we're generating the textures, they should be called layer0, layer1, etc.
+                        //So the key technically doesn't matter at all here.
+                        JsonObjectBuilder textureBuilder = new JsonObjectBuilder();
+                        for(int i = 0; i < asset.getTextures().size(); i++) {
+                            TextureAsset textureAsset = asset.getTextures().get(i);
+                            if(textureAsset.getName().startsWith("minecraft:")) {
+                                textureBuilder.add("layer" + i, textureAsset.getName());
+                            } else {
+                                textureBuilder.add("layer" + i, asset.getNamespace() + ":item/" + textureAsset.getName());
+                            }
+                        }
+
                         JsonObject object = new JsonObjectBuilder().add("parent", "minecraft:item/generated")
-                                .add("textures", new JsonObjectBuilder()
-                                        .add("layer0", asset.getNamespace() + ":item/" + asset.getName()).getObject()).getObject();
+                                .add("textures", textureBuilder.getObject()).getObject();
 
                         write(object, customModel);
                     } else {
@@ -144,8 +148,12 @@ public class ItemAsset extends Asset {
 
                             //Make sure the textures point to the correct .png textures.
                             for(Map.Entry<String, JsonElement> entry : textures.entrySet()) {
-                                if(!entry.getValue().getAsString().startsWith("minecraft:")) {
-                                    textures.addProperty(entry.getKey(), asset.getNamespace() + ":item/" + asset.getName());
+                                for(TextureAsset textureAsset : asset.getTextures()) {
+                                    if(!textureAsset.getKey().equalsIgnoreCase(entry.getKey())) continue;
+
+                                    if(!entry.getValue().getAsString().startsWith("minecraft:")) {
+                                        textures.addProperty(entry.getKey(), asset.getNamespace() + ":item/" + textureAsset.getName());
+                                    }
                                 }
                             }
 
@@ -185,7 +193,7 @@ public class ItemAsset extends Asset {
     /**
      * @return The texture file
      */
-    public File getTexture() {return texture;}
+    public List<TextureAsset> getTextures() {return textures;}
 
     /**
      * Returns a copy of the ItemStack this asset references.

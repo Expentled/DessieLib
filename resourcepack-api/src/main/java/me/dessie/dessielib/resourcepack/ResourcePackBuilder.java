@@ -40,6 +40,8 @@ public class ResourcePackBuilder {
         if(!ResourcePack.isRegistered()) {
             throw new IllegalStateException("You need to register ResourcePackAPI to start creating Builders!");
         }
+
+        this.setDescription("Default description");
     }
 
     /**
