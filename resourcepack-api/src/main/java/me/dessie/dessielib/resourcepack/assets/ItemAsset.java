@@ -72,6 +72,8 @@ public class ItemAsset extends Asset {
 
                     //Copy the texture png file to it's proper folder.
                     for(TextureAsset textureAsset : asset.getTextures()) {
+                        if(textureAsset.getTextureFile() == null) continue;
+
                         FileUtils.copyFile(textureAsset.getTextureFile(), new File(asset.getResourceItemTextureFolder() + "/" + textureAsset.getTextureFile().getName()));
                     }
                 }

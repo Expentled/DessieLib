@@ -9,6 +9,8 @@ import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import javax.annotation.Nullable;
+
 public class SlotUpdateEvent extends PlayerEvent implements Cancellable {
     private static final HandlerList HANDLERS = new HandlerList();
     private boolean cancelled;
@@ -109,12 +111,14 @@ public class SlotUpdateEvent extends PlayerEvent implements Cancellable {
      * Will return null if UpdateType is not INVENTORY_INTERACT
      * @return The new Inventory with the new contents
      */
+    @Nullable
     public Inventory getNewInventory() { return newInventory; }
 
     /**
      * Will return null if UpdateType is not INVENTORY_INTERACT
      * @return The old Inventory with the old contents
      */
+    @Nullable
     public Inventory getOldInventory() { return oldInventory; }
 
     /**
