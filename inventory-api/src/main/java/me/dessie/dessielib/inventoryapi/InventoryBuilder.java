@@ -31,8 +31,8 @@ public class InventoryBuilder {
 
     /**
      * Creates an empty Inventory with a size and title.
-     * @param size
-     * @param name
+     * @param size The size of the Inventory, should be divisible by 9 and no larger than 54.
+     * @param name The name of the Inventory.
      */
     public InventoryBuilder(int size, String name) {
         if(!InventoryAPI.isRegistered()) {
@@ -56,10 +56,12 @@ public class InventoryBuilder {
     /**
      * Creates a complete copy of this Inventory.
      *
-     * @param builder
+     * @param builder The InventoryBuilder to copy.
      * @param pages If pages should be copied
      */
     public InventoryBuilder(InventoryBuilder builder, boolean pages) {
+        Objects.requireNonNull(builder, "Cannot copy null builder!");
+
         this.size = builder.getSize();
         this.name = builder.getName();
         this.close = builder.close;

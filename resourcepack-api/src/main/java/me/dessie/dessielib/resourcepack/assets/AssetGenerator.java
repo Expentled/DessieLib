@@ -16,6 +16,7 @@ public abstract class AssetGenerator {
      * @param builder The ResourcePackBuilder that is initializing this asset
      * @param assets The assets that are being initialized.
      *               This list can be cast to your specific asset using {@link AssetGenerator#cast(Class, List)}
+     * @throws IOException If an IOException occurs.
      */
     public abstract void init(ResourcePackBuilder builder, List<Asset> assets) throws IOException;
 
@@ -27,6 +28,7 @@ public abstract class AssetGenerator {
      * @param builder The ResourcePackBuilder that is generating this asset
      * @param assets The assets that are being generated.
      *               This list can be cast to your specific asset using {@link AssetGenerator#cast(Class, List)}
+     * @throws IOException If an IOException occurs.
      */
     public abstract void generate(ResourcePackBuilder builder, List<Asset> assets) throws IOException;
 

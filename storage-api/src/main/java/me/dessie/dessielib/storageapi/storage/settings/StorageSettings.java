@@ -1,4 +1,4 @@
-package me.dessie.dessielib.storageapi.storage.container.settings;
+package me.dessie.dessielib.storageapi.storage.settings;
 
 import me.dessie.dessielib.storageapi.storage.cache.StorageCache;
 import me.dessie.dessielib.storageapi.storage.container.StorageContainer;

@@ -5,7 +5,7 @@ import me.dessie.dessielib.storageapi.storage.container.StorageContainer;
 import me.dessie.dessielib.storageapi.storage.container.hooks.DeleteHook;
 import me.dessie.dessielib.storageapi.storage.container.hooks.RetrieveHook;
 import me.dessie.dessielib.storageapi.storage.container.hooks.StoreHook;
-import me.dessie.dessielib.storageapi.storage.container.settings.StorageSettings;
+import me.dessie.dessielib.storageapi.storage.settings.StorageSettings;
 import net.minecraft.nbt.*;
 import org.bukkit.NamespacedKey;
 import org.bukkit.craftbukkit.v1_18_R1.persistence.CraftPersistentDataContainer;
@@ -20,7 +20,18 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Predicate;
 
+/**
+ * An abstract {@link StorageContainer} that stores using the {@link PersistentDataContainer} from Spigot.\
+ *
+ * Currently, Chunks, Entities, ItemStacks and TileStates are implemented.
+ *
+ * @see ChunkContainer
+ * @see EntityContainer
+ * @see ItemStackContainer
+ * @see TileStateContainer
+ */
 public abstract class PDContainer extends StorageContainer {
 
     //The maps for the TagType -> Class. For some reason this isn't already stored in the TagType itself?? why??
@@ -39,17 +50,43 @@ public abstract class PDContainer extends StorageContainer {
         put(CompoundTag.class, PersistentDataContainer.class);
     }};
 
-    protected PDContainer() {
-        super(new StorageSettings());
-    }
+    /**
+     * Creates a PDContainer that can be stored to and retrieved from.
+     * This will use the default settings in {@link StorageSettings}.
+     */
+    protected PDContainer() {super(new StorageSettings());}
+
+    /**
+     * Creates a PDContainer that can be stored to and retrieved from.
+     * This will use the provided settings from {@link StorageSettings}.
+     *
+     * @param settings The StorageSettings for this Container.
+     */
     protected PDContainer(StorageSettings settings) {
         super(settings);
     }
+
+    /**
+     * The {@link PersistentDataHolder} that this Container supports.
+     *
+     * @see ChunkContainer for storing data within {@link org.bukkit.Chunk}s
+     * @see EntityContainer for storing data within {@link org.bukkit.entity.Entity}s
+     * @see ItemStackContainer for storing data within {@link org.bukkit.inventory.ItemStack}s
+     * @see TileStateContainer for storing data within {@link org.bukkit.block.TileState}s
+     *
+     * @return The PersistentDataHolder that will be used to read/write data to.
+     */
+    public abstract PersistentDataHolder getHolder();
 
     @Override
     @SuppressWarnings("unchecked")
     protected StoreHook storeHook() {
         return new StoreHook((path, data) -> {
+
+            int i = 65;
+
+            Predicate<Integer> predicate = ((i == 65) ? ((k) -> k < 63) : ((k) -> k > -1));
+
             NamespacedKey key = new NamespacedKey(StorageAPI.getPlugin(), path);
 
             PersistentDataContainer container = this.getHolder().getPersistentDataContainer();
@@ -105,6 +142,4 @@ public abstract class PDContainer extends StorageContainer {
             return null;
         });
     }
-
-    public abstract PersistentDataHolder getHolder();
 }

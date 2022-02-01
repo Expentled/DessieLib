@@ -33,6 +33,7 @@ public class ItemAsset extends Asset {
     private final File minecraftItemModelFolder;
 
     /**
+     * @param name The name of the asset.
      * @param item The {@link ItemStack} to apply the texture to.
      * @param texture The texture png that will be applied to the ItemStack.
      */

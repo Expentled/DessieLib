@@ -8,7 +8,7 @@ import me.dessie.dessielib.storageapi.storage.container.StorageContainer;
 import me.dessie.dessielib.storageapi.storage.container.hooks.DeleteHook;
 import me.dessie.dessielib.storageapi.storage.container.hooks.RetrieveHook;
 import me.dessie.dessielib.storageapi.storage.container.hooks.StoreHook;
-import me.dessie.dessielib.storageapi.storage.container.settings.StorageSettings;
+import me.dessie.dessielib.storageapi.storage.settings.StorageSettings;
 import org.bukkit.Bukkit;
 
 import java.io.File;
@@ -16,17 +16,32 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
+/**
+ * A {@link StorageContainer} that stores using JSON format using {@link Gson}.
+ */
 public class JSONContainer extends StorageContainer implements ArrayContainer {
 
+    private final Gson gson = new Gson().newBuilder().setPrettyPrinting().create();
     private final File json;
     private JsonObject object;
 
-    private final Gson gson = new Gson().newBuilder().setPrettyPrinting().create();
-
+    /**
+     * Creates a JSONContainer that can be stored and retrieved from using the provided file.
+     * This will use the default settings in {@link StorageSettings}.
+     *
+     * @param jsonFile The JSON {@link File} that will be used for this Container.
+     */
     public JSONContainer(File jsonFile) {
         this(jsonFile, new StorageSettings());
     }
 
+    /**
+     * Creates a JSONContainer that can be stored and retrieved from using the provided file.
+     * This will use the provided settings from {@link StorageSettings}.
+     *
+     * @param jsonFile The JSON {@link File} that will be used for this Container.
+     * @param settings The StorageSettings for this Container.
+     */
     public JSONContainer(File jsonFile, StorageSettings settings) {
         super(settings);
         this.json = jsonFile;
@@ -49,14 +64,30 @@ public class JSONContainer extends StorageContainer implements ArrayContainer {
         }
     }
 
+    /**
+     * @return The JSON {@link File} that is being used for the container.
+     */
     public File getJson() {
         return json;
     }
 
+    /**
+     * @return The {@link JsonObject} that Gson is using to parse JSON.
+     */
+    public JsonObject getObject() {
+        return object;
+    }
+
+    /**
+     * @return The Gson instance.
+     */
+    public Gson getGson() {
+        return gson;
+    }
 
     @Override
     protected StoreHook storeHook() {
-        return (StoreHook) new StoreHook((path, data) -> {
+        return new StoreHook((path, data) -> {
             JsonObject current = this.getObject();
 
             String[] tree = path.split("\\.");
@@ -82,7 +113,7 @@ public class JSONContainer extends StorageContainer implements ArrayContainer {
 
     @Override
     protected DeleteHook deleteHook() {
-        return (DeleteHook) new DeleteHook(path -> {
+        return new DeleteHook(path -> {
             JsonObject current = this.getObject();
             String[] tree = path.split("\\.");
 
@@ -105,8 +136,9 @@ public class JSONContainer extends StorageContainer implements ArrayContainer {
     @Override
     protected RetrieveHook retrieveHook() {
         return new RetrieveHook(path -> {
-            String[] tree = path.split("\\.");
+            System.out.println(path);
 
+            String[] tree = path.split("\\.");
             JsonObject current = this.getObject();
             for(int i = 0; i < tree.length; i++) {
                 if(i == tree.length - 1) {
@@ -123,12 +155,5 @@ public class JSONContainer extends StorageContainer implements ArrayContainer {
         FileWriter writer = new FileWriter(this.getJson());
         this.getGson().toJson(this.getObject(), writer);
         writer.close();
-    }
-
-    public JsonObject getObject() {
-        return object;
-    }
-    public Gson getGson() {
-        return gson;
     }
 }

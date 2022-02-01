@@ -3,12 +3,12 @@ package me.dessie.dessielib.storageapi.storage.container;
 import me.dessie.dessielib.storageapi.StorageAPI;
 import me.dessie.dessielib.storageapi.storage.cache.CachedObject;
 import me.dessie.dessielib.storageapi.storage.cache.StorageCache;
-import me.dessie.dessielib.storageapi.storage.container.decomposition.DecomposedObject;
-import me.dessie.dessielib.storageapi.storage.container.decomposition.StorageDecomposer;
 import me.dessie.dessielib.storageapi.storage.container.hooks.DeleteHook;
 import me.dessie.dessielib.storageapi.storage.container.hooks.RetrieveHook;
 import me.dessie.dessielib.storageapi.storage.container.hooks.StoreHook;
-import me.dessie.dessielib.storageapi.storage.container.settings.StorageSettings;
+import me.dessie.dessielib.storageapi.storage.decomposition.DecomposedObject;
+import me.dessie.dessielib.storageapi.storage.decomposition.StorageDecomposer;
+import me.dessie.dessielib.storageapi.storage.settings.StorageSettings;
 import org.bukkit.Bukkit;
 
 import java.util.ArrayList;
@@ -60,12 +60,36 @@ public abstract class StorageContainer {
         }
     }
 
+    /**
+     * Required implementation method, specifies how this StorageContainer's
+     * store operations are performed.
+     *
+     * @return The {@link StoreHook} behavior.
+     */
     protected abstract StoreHook storeHook();
+
+    /**
+     * Required implementation method, specifies how this StorageContainer's
+     * delete operations are performed.
+     *
+     * @return The {@link DeleteHook} behavior.
+     */
     protected abstract DeleteHook deleteHook();
+
+    /**
+     * Required implementation method, specifies how this StorageContainer's
+     * retrieve operations are performed.
+     *
+     * @return The {@link RetrieveHook} behavior.
+     */
     protected abstract RetrieveHook retrieveHook();
 
     /**
      * Returns a cached object.
+     * Objects are only cached after they've initially been retrieved.
+     * Therefore, this method will always return null if you haven't retrieved a path yet.
+     *
+     * @see StorageContainer#retrieve(String) for retrieving data
      *
      * @param path The path to get the data from.
      * @param <T> The type to cast to
@@ -172,6 +196,34 @@ public abstract class StorageContainer {
     }
 
     /**
+     * Retrieves an object directly from the data source with implicit casting.
+     * Note: This method will not recompose {@link StorageDecomposer}s.
+     *
+     * Note: This method is blocking, and will block until the data structure returns an object.
+     * It is highly recommended to only use this method if you know your data structure will not block
+     *
+     * @see StorageContainer#retrieve(Class, String) for retrieving with explicit casting, or to recompose decomposed objects.
+     * @see StorageContainer#retrieveAsync(String) for retrieving data asynchronously.
+     *
+     * @param <T> The implicit type that will be cast to.
+     * @param path The path to retrieve.
+     * @return The cast object from the path, or null if it doesn't exist.
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T retrieve(String path) {
+        Objects.requireNonNull(path, "Cannot retrieve from null path!");
+
+        if(this.isCached(path)) {
+            return this.get(path);
+        }
+
+        T obj = (T) this.retrieveHook().getFunction().apply(path);
+        this.retrieveHook().complete();
+        this.cache(path, obj);
+        return obj;
+    }
+
+    /**
      * Retrieves the object directly from the data source with explicit casting.
      * If you want to retrieve a {@link StorageDecomposer}, you will need to use this method and provide the type.
      *
@@ -224,28 +276,17 @@ public abstract class StorageContainer {
 
     /**
      * Retrieves an object directly from the data source with implicit casting.
+     * This method is executed asynchronously, and the future will be completed when the data has been returned.
      * Note: This method will not recompose {@link StorageDecomposer}s.
      *
-     * @see StorageContainer#retrieve(Class, String) for retrieving with explicit casting, or to recompose decomposed objects.
-     * @see StorageContainer#retrieveAsync(String) for retrieving data asynchronously.
+     * @see StorageContainer#retrieveAsync(Class, String) for retrieving with explicit casting, or to recompose decomposed objects.
      *
      * @param <T> The implicit type that will be cast to.
      * @param path The path to retrieve.
      * @return The cast object from the path, or null if it doesn't exist.
-     * @throws ClassCastException If the object returned is not of type T.
      */
-    @SuppressWarnings("unchecked")
-    public <T> T retrieve(String path) {
-        Objects.requireNonNull(path, "Cannot retrieve from null path!");
-
-        if(this.isCached(path)) {
-            return this.get(path);
-        }
-
-        T obj = (T) this.retrieveHook().getFunction().apply(path);
-        this.retrieveHook().complete();
-        this.cache(path, obj);
-        return obj;
+    public <T> CompletableFuture<T> retrieveAsync(String path) {
+        return CompletableFuture.supplyAsync(() -> this.retrieve(path));
     }
 
     /**
@@ -253,32 +294,15 @@ public abstract class StorageContainer {
      * If you want to retrieve a {@link StorageDecomposer}, you will need to use this method and provide the type.
      * This method is executed asynchronously, and the future will be completed when the data has been returned.
      *
-     * @see StorageContainer#retrieve(String) to get the value with implicit casting.
+     * @see StorageContainer#retrieveAsync(String) to get the value with implicit casting.
      *
      * @param <T> The explicit type that will be cast to.
      * @param type The type of Object to get. If this Object has a {@link StorageDecomposer}, it will be used.
      * @param path The path to retrieve.
      * @return The cast object from the path, or null if it doesn't exist.
-     * @throws ClassCastException If the object at the retrieved path is not of type T.
      */
     public <T> CompletableFuture<T> retrieveAsync(Class<T> type, String path) {
         return CompletableFuture.supplyAsync(() -> this.retrieve(type, path));
-    }
-
-    /**
-     * Retrieves an object directly from the data source with implicit casting.
-     * This method is executed asynchronously, and the future will be completed when the data has been returned.
-     * Note: This method will not recompose {@link StorageDecomposer}s.
-     *
-     * @see StorageContainer#retrieve(Class, String) for retrieving with explicit casting, or to recompose decomposed objects.
-     *
-     * @param <T> The implicit type that will be cast to.
-     * @param path The path to retrieve.
-     * @return The cast object from the path, or null if it doesn't exist.
-     * @throws ClassCastException If the object returned is not of type T.
-     */
-    public <T> CompletableFuture<T> retrieveAsync(String path) {
-        return CompletableFuture.supplyAsync(() -> this.retrieve(path));
     }
 
     /**
@@ -339,14 +363,33 @@ public abstract class StorageContainer {
         this.getCache().clearCache();
     }
 
+    /**
+     * Adds a {@link StorageDecomposer} that can be accessed through all StorageContainer instances.
+     * These only need to be added once, and a class can only have 1 StorageDecomposer.
+     *
+     * Attempting to add a second StorageDecomposer for a class will overwrite the first one.
+     *
+     * @param decomposer The StorageDecomposer to add.
+     */
     public static void addStorageDecomposer(StorageDecomposer<?> decomposer) {
+        getStorageDecomposers().removeIf(decomp -> decomp.getType() == decomposer.getType());
         getStorageDecomposers().add(decomposer);
     }
 
+    /**
+     * Returns a {@link StorageDecomposer} from the class instance.
+     *
+     * @param clazz The class to get the decomposer for.
+     * @return The registered StorageDecomposer for the provided class, or null if it doesn't exist.
+     */
     public static StorageDecomposer<?> getDecomposer(Class<?> clazz) {
+        if(clazz == null) return null;
         return getStorageDecomposers().stream().filter(decomposer -> decomposer.getType() == clazz).findFirst().orElse(null);
     }
 
+    /**
+     * @return All registered {@link StorageDecomposer}s
+     */
     public static List<StorageDecomposer<?>> getStorageDecomposers() {
         return storageDecomposers;
     }

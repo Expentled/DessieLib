@@ -39,6 +39,8 @@ public class Packeteer implements Listener {
 
     /**
      * Enables Packeteer to start listening for packets.
+     * @param yourPlugin Your plugin instance
+     * @return A {@link Packeteer} instance for usage.
      */
     public static Packeteer register(JavaPlugin yourPlugin) {
         if(isRegistered()) {

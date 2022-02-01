@@ -12,7 +12,6 @@ me.dessie.dessielib.enchantmentapi.listener
 me.dessie.dessielib.enchantmentapi.properties
 me.dessie.dessielib.enchantmentapi.utils
 me.dessie.dessielib.experimental
-me.dessie.dessielib.experimental.commands
 me.dessie.dessielib.inventoryapi
 me.dessie.dessielib.packeteer
 me.dessie.dessielib.particleapi
@@ -30,3 +29,16 @@ me.dessie.dessielib.resourcepack.listeners
 me.dessie.dessielib.resourcepack.util
 me.dessie.dessielib.resourcepack.webhost
 me.dessie.dessielib.scoreboardapi
+me.dessie.dessielib.storageapi
+me.dessie.dessielib.storageapi.storage.cache
+me.dessie.dessielib.storageapi.storage.container
+me.dessie.dessielib.storageapi.storage.container.hooks
+me.dessie.dessielib.storageapi.storage.decomposition
+me.dessie.dessielib.storageapi.storage.format.flatfile
+me.dessie.dessielib.storageapi.storage.format.mysql
+me.dessie.dessielib.storageapi.storage.format.mysql.column
+me.dessie.dessielib.storageapi.storage.format.mysql.data
+me.dessie.dessielib.storageapi.storage.format.mysql.data.types
+me.dessie.dessielib.storageapi.storage.format.mysql.table
+me.dessie.dessielib.storageapi.storage.format.persistent
+me.dessie.dessielib.storageapi.storage.settings

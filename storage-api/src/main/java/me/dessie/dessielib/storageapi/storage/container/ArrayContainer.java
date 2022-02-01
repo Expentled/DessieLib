@@ -9,8 +9,9 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * For data structures that support array storages (ie, {@link YAMLContainer and {@link JSONContainer }}
+ * For data structures that support array storages (ie, {@link YAMLContainer} and {@link JSONContainer}
  * this interface will allow easier connection with those arrays, if implemented within the container.
+ *
  */
 public interface ArrayContainer {
 
@@ -76,6 +77,7 @@ public interface ArrayContainer {
      * @param object The object to check the list for.
      * @param <T> The type of the object
      * @throws ClassCastException If the array list cannot support type T.
+     *
      * @return A future that when completed will verify if the object exists within the provided array.
      */
     default <T> CompletableFuture<Boolean> listContains(StorageContainer container, String path, T object) {

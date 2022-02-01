@@ -126,6 +126,7 @@ public class BitmapUnicodeAsset extends Asset {
      * @param texture The literal texture reference, such as dessielib:font/apple.png or minecraft:item/gold_ingot.png
      * @param ascent The ascent of the bitmap (vertical offset)
      *               Can be negative
+     * @param shouldUseInAtlas If the bitmap should be used in an atlas or referenced separately
      * @param unicode A provided Unicode integer that this Bitmap will represent.
      */
     public BitmapUnicodeAsset(String name, @Nullable File bitmappedFile, @Nullable String texture, int ascent, boolean shouldUseInAtlas, int unicode) {
