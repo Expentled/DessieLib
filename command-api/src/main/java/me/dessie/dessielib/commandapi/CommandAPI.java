@@ -101,7 +101,7 @@ public class CommandAPI {
      */
     public static CommandAPI register(JavaPlugin yourPlugin, boolean registerAllCommands) {
         if(isRegistered()) {
-            throw new IllegalStateException("ResourcePack already registered to " + getPlugin().getName());
+            throw new IllegalStateException("CommandAPI already registered to " + getPlugin().getName());
         }
         plugin = yourPlugin;
         registered = true;

@@ -152,23 +152,33 @@ public abstract class StorageContainer {
     public void store(String path, Object data) {
         Objects.requireNonNull(path, "Cannot store to null path!");
 
+        StorageDecomposer<?> decomposer = getDecomposer(data.getClass());
+        DecomposedObject object = null;
+
+        //Cache the data.
+        if(decomposer != null) {
+            String decomposePath = path + ".%path%";
+            object = decomposer.applyDecompose(data);
+            for(String decomposedPath : object.getDecomposedMap().keySet()) {
+                this.cache(decomposePath.replace("%path%", decomposedPath), object.getDecomposedMap().get(decomposedPath));
+            }
+        } else {
+            this.cache(path, data);
+        }
+
+        DecomposedObject finalObject = object;
         Bukkit.getScheduler().runTaskAsynchronously(StorageAPI.getPlugin(), () -> {
-            StorageDecomposer<?> decomposer = getDecomposer(data.getClass());
             if(decomposer != null) {
                 //Add the placeholder for each decomposed path.
                 String decomposePath = path + ".%path%";
-                DecomposedObject object = decomposer.applyDecompose(data);
-                for(String decomposedPath : object.getDecomposedMap().keySet()) {
-                    this.storeHook().getConsumer().accept(decomposePath.replace("%path%", decomposedPath), object.getDecomposedMap().get(decomposedPath));
+                for(String decomposedPath : finalObject.getDecomposedMap().keySet()) {
+                    this.storeHook().getConsumer().accept(decomposePath.replace("%path%", decomposedPath), finalObject.getDecomposedMap().get(decomposedPath));
                 }
             } else {
                 this.storeHook().getConsumer().accept(path, data);
             }
             this.storeHook().complete();
         });
-
-        //Cache the data
-        this.cache(path, data);
 
         //No need to update these later, since this should overwrite them.
         this.getCache().getSetCache().remove(path);

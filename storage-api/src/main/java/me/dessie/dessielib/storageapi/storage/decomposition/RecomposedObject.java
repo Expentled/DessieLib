@@ -33,7 +33,7 @@ public class RecomposedObject<T> {
      * @param path The path to add to.
      * @param data The Function, that accepts the path provided and returns a CompletableFuture with the
      *             Object retrieved at that path.
-     *             Generally, you'll want to return {@link me.dessie.dessielib.storageapi.storage.container.StorageContainer#retrieve(String)}.
+     *             Generally, you'll want to return {@link me.dessie.dessielib.storageapi.storage.container.StorageContainer#retrieveAsync(String)}.
      * @return The RecomposedObject instance.
      */
     public RecomposedObject<T> addRecomposeKey(String path, Function<String, CompletableFuture<Object>> data) {
@@ -98,14 +98,19 @@ public class RecomposedObject<T> {
 
     /**
      * Calls the {@link RecomposedObject#onComplete(Function)} method.
-     * @return The Object that the complete function returns.
+     * @return The Object that the complete function returns, or null if the Object was unable to be created.
      */
     public T complete() {
-        return this.completeFunction.apply(this);
+        try {
+            return this.completeFunction.apply(this);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     /**
-     * Returns a the completed object for a specified path.
+     * Returns the completed object for a specified path.
      * This should only be called in the {@link RecomposedObject#onComplete(Function)} method.
      * This method is Thread blocking, and will wait for the Recompose Functions to be completed to return.
      *

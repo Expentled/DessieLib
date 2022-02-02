@@ -47,7 +47,7 @@ public class JSONContainer extends StorageContainer implements ArrayContainer {
         this.json = jsonFile;
 
         try {
-            if(!this.getJson().exists() && !this.getJson().createNewFile()) {
+            if(!this.getJson().exists() && ((this.getJson().getParentFile() != null && !this.getJson().getParentFile().mkdirs()) || !this.getJson().createNewFile())) {
                 Bukkit.getLogger().severe("Unable to create JSON file " + this.getJson().getName());
             }
 
@@ -136,8 +136,6 @@ public class JSONContainer extends StorageContainer implements ArrayContainer {
     @Override
     protected RetrieveHook retrieveHook() {
         return new RetrieveHook(path -> {
-            System.out.println(path);
-
             String[] tree = path.split("\\.");
             JsonObject current = this.getObject();
             for(int i = 0; i < tree.length; i++) {
