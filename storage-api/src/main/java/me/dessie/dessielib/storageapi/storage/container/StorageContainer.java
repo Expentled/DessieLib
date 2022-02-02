@@ -260,7 +260,11 @@ public abstract class StorageContainer {
             //Only append %path% if it doesn't already exist in the String.
             //Also needs to be ran async so it doesn't block itself, very smart
             CompletableFuture<CompletableFuture<T>> future = CompletableFuture.supplyAsync(() -> {
-                return (CompletableFuture<T>) decomposer.applyRecompose(this, path.contains("%path%") ? path : path + ".%path%");
+                try {
+                    return (CompletableFuture<T>) decomposer.applyRecompose(this, path.contains("%path%") ? path : path + ".%path%");
+                } catch (ClassCastException e) {
+                    throw new ClassCastException("Caught ClassCastException when recomposing object! This can occur if you're using addRecomposeKey instead of addCompletedRecomposeKey when using retrieve. addRecomposeKey should use retrieveAsync and addCompletedRecomposeKey should use retrieve or a straight object.");
+                }
             });
 
             try {
