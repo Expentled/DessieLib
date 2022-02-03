@@ -263,7 +263,7 @@ public abstract class StorageContainer {
                 try {
                     return (CompletableFuture<T>) decomposer.applyRecompose(this, path.contains("%path%") ? path : path + ".%path%");
                 } catch (ClassCastException e) {
-                    throw new ClassCastException("Caught ClassCastException when recomposing object! This can occur if you're using addRecomposeKey instead of addCompletedRecomposeKey when using retrieve. addRecomposeKey should use retrieveAsync and addCompletedRecomposeKey should use retrieve or a straight object.");
+                    throw new ClassCastException("Unable to recompose! This can occur if you're using addRecomposeKey instead of addCompletedRecomposeKey when using retrieve. addRecomposeKey should use retrieveAsync and addCompletedRecomposeKey should use retrieve or a straight object.");
                 }
             });
 

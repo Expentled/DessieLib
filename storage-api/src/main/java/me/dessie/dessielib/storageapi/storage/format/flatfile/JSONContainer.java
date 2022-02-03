@@ -47,7 +47,7 @@ public class JSONContainer extends StorageContainer implements ArrayContainer {
         this.json = jsonFile;
 
         try {
-            if(!this.getJson().exists() && ((this.getJson().getParentFile() != null && !this.getJson().getParentFile().mkdirs()) || !this.getJson().createNewFile())) {
+            if(!this.getJson().exists() && ((this.getJson().getParentFile() != null && !this.getJson().getParentFile().mkdirs()) | !this.getJson().createNewFile())) {
                 Bukkit.getLogger().severe("Unable to create JSON file " + this.getJson().getName());
             }
 

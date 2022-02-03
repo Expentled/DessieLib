@@ -44,7 +44,7 @@ public class YAMLContainer extends StorageContainer implements ArrayContainer {
         this.configuration = new YamlConfiguration();
 
         try {
-            if(!this.getYaml().exists() && ((this.getYaml().getParentFile() != null && !this.getYaml().getParentFile().mkdirs()) || !this.getYaml().createNewFile())) {
+            if(!this.getYaml().exists() && ((this.getYaml().getParentFile() != null && !this.getYaml().getParentFile().mkdirs()) | !this.getYaml().createNewFile())) {
                 Bukkit.getLogger().severe("Unable to create YAML file " + this.getYaml().getName());
             } else {
                 this.getConfiguration().load(this.getYaml());

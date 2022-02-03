@@ -58,6 +58,7 @@ DessieLib provides many features that are cumbersome in CraftBukkit and Spigot, 
 - `ResourcepackAPI` Allows you to generate an entire resource pack by just dropping in files.
 - `Packeteer` Allows you to listen for incoming and outgoing packets, and fire events for these packets.
 - `CommandAPI` can automatically register your commands without needing to write them in the plugin.yml
+- `StorageAPI` easily stores, retrieves, and deletes data from different types of data structures.
 
 <details>
 <summary>Basic InventoryAPI Usage</summary>
@@ -488,6 +489,93 @@ public class ExampleCommand extends XCommand {
 
 </details>
 
+<details>
+<summary>Basic StorageAPI Usage</summary>
+
+```java
+public class Main extends JavaPlugin {
+    private YAMLContainer container;
+
+    @Override
+    public void onEnable() {
+
+        //Register the API and Events
+        StorageAPI.register(this);
+        this.getServer().getPluginManager().registerEvents(this, this);
+
+        //Create the YAML container. The process for other containers such as JSONContainer, MySQLContainer follow the same principals.
+        this.container = new YAMLContainer(new File(this.getDataFolder(), "test.yml"), new StorageSettings(-1, 300));
+
+        //Store some text paths and data values.
+        this.getContainer().store("testDouble", 5.4);
+        this.getContainer().store("a.path.to.a.string", "Hello!");
+
+        //Retrieve the values back from the container, both async and with "blocking".
+        Bukkit.getLogger().log(Level.INFO, "Double stored is: " + this.getContainer().retrieve("testDouble"));
+        this.getContainer().retrieveAsync(String.class, "a.path.to.a.string").thenAccept(retrieved -> {
+            System.out.println("The configuration says " + retrieved);
+        });
+
+        //A StorageDecomposer makes it easy to store different types of Objects by decomposing them into components.
+        //They can then be recomposed to be re-retrieved from the container.
+
+        //This decomposer is for Locations, and when retrieving or storing a Location object, it will go through this object.
+        StorageContainer.addStorageDecomposer(new StorageDecomposer<>(Location.class, (location -> {
+            DecomposedObject object = new DecomposedObject();
+
+            //We're first going to specify the paths that are stored. For a Location we'll just store the world, x, y, and z.
+            //These are used when we're STORING a Location.
+            Objects.requireNonNull(location.getWorld(), "World cannot be null!");
+            object.addDecomposedKey("world", location.getWorld().getName());
+            object.addDecomposedKey("x", location.getX());
+            object.addDecomposedKey("y", location.getY());
+            object.addDecomposedKey("z", location.getZ());
+
+            return object;
+        }), (container, recompose) -> {
+
+            //Next, we'll retrieve the data back from the container to re-build the Location object that was initially passed.
+            //You should use the exact same paths as above.
+
+            //The container::retrieveAsync here is just a Function that returns the object back.
+            //For example, "x" path should return the double x value for the Location.
+            recompose.addRecomposeKey("world", container::retrieveAsync);
+            recompose.addRecomposeKey("x", container::retrieveAsync);
+            recompose.addRecomposeKey("y", container::retrieveAsync);
+            recompose.addRecomposeKey("z", container::retrieveAsync);
+
+            //Since addRecomposedKeys are CompletableFutures, we want to make sure they're all completed before
+            //rebuilding the Location object. So we'll do that with onComplete
+            return recompose.onComplete(completed -> {
+
+                //Now, we can just use getCompletedObject with our path to get the required Objects to build our Location object and return it!
+                World world = Bukkit.getWorld((String) completed.getCompletedObject("world"));
+                double x = (double) completed.getCompletedObject("x");
+                double y = (double) completed.getCompletedObject("y");
+                float z = (float) (double) completed.getCompletedObject("z");
+
+                return new Location(world, x, y, z);
+            });
+        }));
+    }
+
+    @EventHandler
+    public void onJoin(PlayerJoinEvent event) {
+        //Now we can just simply store the Location object using store and the path.
+        this.getContainer().store("location." + event.getPlayer().getUniqueId(), event.getPlayer().getLocation());
+
+        //And we can retrieve it using the retrieve! This will print our Location!
+        Location retrievedLocation = this.getContainer().retrieve(Location.class, "location." + event.getPlayer().getUniqueId());
+        System.out.println(retrievedLocation);
+    }
+
+    public YAMLContainer getContainer() {
+        return container;
+    }
+```
+
+</details>
+
 DessieLib also features small API elements such as
 - `Base64`, which can read and write Base64 strings into `ItemStack`s or `List<ItemStack>`
 - `LoopedRunnable` which will run a BukkitRunnable a set number of times before automatically stopping.
@@ -497,3 +585,10 @@ DessieLib also features small API elements such as
 ### :ledger: Documentation
 
 The complete JavaDocs can be found [here](https://dessie0.github.io/DessieLib/) <br><br>
+
+### :bug: Reporting Bugs
+
+DessieLib has to make complicated tasks not only easy to use, but applicable in a lot of different scenarios.
+Due to this, you may come across bugs, issues or unexpected behavior. 
+
+If you find a bug, you can report it on the [issues](https://github.com/Dessie0/DessieLib/issues) page.

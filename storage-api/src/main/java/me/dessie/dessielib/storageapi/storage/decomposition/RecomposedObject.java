@@ -55,6 +55,8 @@ public class RecomposedObject<T> {
      * Adds a completed recomposed path and function.
      * @param path The path to add to.
      * @param data The Function, that accepts the path provided and returns the data to return for this path.
+     *             Generally, you'll want to return {@link me.dessie.dessielib.storageapi.storage.container.StorageContainer#retrieve(String)}
+     *             or, return an object that isn't from the container.
      * @return The RecomposedObject instance.
      */
     public RecomposedObject<T> addCompletedRecomposeKey(String path, Function<String, Object> data) {
