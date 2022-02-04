@@ -6,9 +6,9 @@ import me.dessie.dessielib.storageapi.storage.container.hooks.DeleteHook;
 import me.dessie.dessielib.storageapi.storage.container.hooks.RetrieveHook;
 import me.dessie.dessielib.storageapi.storage.container.hooks.StoreHook;
 import me.dessie.dessielib.storageapi.storage.settings.StorageSettings;
-import org.bukkit.Bukkit;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.configuration.serialization.ConfigurationSerializable;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,10 +44,16 @@ public class YAMLContainer extends StorageContainer implements ArrayContainer {
         this.configuration = new YamlConfiguration();
 
         try {
-            if(!this.getYaml().exists() && ((this.getYaml().getParentFile() != null && !this.getYaml().getParentFile().mkdirs()) | !this.getYaml().createNewFile())) {
-                Bukkit.getLogger().severe("Unable to create YAML file " + this.getYaml().getName());
-            } else {
+            //Create the file.
+            if(this.getYaml().getParentFile() != null) {
+                this.getYaml().getParentFile().mkdirs();
+            }
+            this.getYaml().createNewFile();
+
+            if(this.getYaml().exists()) {
                 this.getConfiguration().load(this.getYaml());
+            } else {
+                throw new IOException("Unable to create file " + this.getYaml().getName());
             }
         } catch (IOException | InvalidConfigurationException e) {
             e.printStackTrace();
@@ -97,5 +103,10 @@ public class YAMLContainer extends StorageContainer implements ArrayContainer {
     @Override
     protected RetrieveHook retrieveHook() {
         return new RetrieveHook(path -> this.getConfiguration().get(path));
+    }
+
+    @Override
+    public boolean isSupported(Class<?> clazz) {
+        return super.isSupported(clazz) || ConfigurationSerializable.class.isAssignableFrom(clazz);
     }
 }

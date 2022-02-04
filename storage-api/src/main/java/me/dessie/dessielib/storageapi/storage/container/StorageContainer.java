@@ -12,6 +12,7 @@ import me.dessie.dessielib.storageapi.storage.settings.StorageSettings;
 import org.bukkit.Bukkit;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -118,6 +119,10 @@ public abstract class StorageContainer {
     public void set(String path, Object data) {
         Objects.requireNonNull(path, "Cannot set to null path!");
 
+        if(!isSupported(data.getClass())) {
+            throw new IllegalArgumentException(data.getClass() + " is not a supported storage class. Create a StorageDecomposer to implement behavior!");
+        }
+
         this.getCache().getSetCache().put(path, data);
         this.getCache().getRemoveCache().remove(path);
     }
@@ -151,6 +156,10 @@ public abstract class StorageContainer {
      */
     public void store(String path, Object data) {
         Objects.requireNonNull(path, "Cannot store to null path!");
+
+        if(!isSupported(data.getClass())) {
+            throw new IllegalArgumentException(data.getClass() + " is not a supported storage class. Create a StorageDecomposer to implement behavior!");
+        }
 
         StorageDecomposer<?> decomposer = getDecomposer(data.getClass());
         DecomposedObject object = null;
@@ -253,6 +262,10 @@ public abstract class StorageContainer {
     public <T> T retrieve(Class<T> type, String path) {
         Objects.requireNonNull(path, "Cannot retrieve from null path!");
         Objects.requireNonNull(type, "Type must be provided");
+
+        if(!isSupported(type)) {
+            throw new IllegalArgumentException(type + " is not a supported storage class. Create a StorageDecomposer to implement behavior!");
+        }
 
         StorageDecomposer<?> decomposer = getDecomposer(type);
         T data;
@@ -375,6 +388,24 @@ public abstract class StorageContainer {
      */
     public void clearCache() {
         this.getCache().clearCache();
+    }
+
+    /**
+     * Returns if a class is supported for storage in this container.
+     *
+     * All primitives and Strings are automatically supported.
+     * Other classes will need to have a {@link StorageDecomposer} to be considered supported.
+     *
+     * @param clazz The type to check.
+     * @return If the specified class is able to be stored.
+     */
+    public boolean isSupported(Class<?> clazz) {
+        if(clazz.isPrimitive()) return true;
+        if(clazz == String.class) return true;
+        if(getDecomposer(clazz) != null) return true;
+        if(this instanceof ArrayContainer && (clazz.isArray() || Collection.class.isAssignableFrom(clazz))) return true;
+
+        return false;
     }
 
     /**

@@ -566,7 +566,7 @@ public class Main extends JavaPlugin {
 
         //And we can retrieve it using the retrieve! This will print our Location!
         Location retrievedLocation = this.getContainer().retrieve(Location.class, "location." + event.getPlayer().getUniqueId());
-        System.out.println(retrievedLocation);
+        Bukkit.getLogger().log(Level.INFO, retrievedLocation.toString());
     }
 
     public YAMLContainer getContainer() {

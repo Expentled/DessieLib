@@ -9,7 +9,6 @@ import me.dessie.dessielib.storageapi.storage.container.hooks.DeleteHook;
 import me.dessie.dessielib.storageapi.storage.container.hooks.RetrieveHook;
 import me.dessie.dessielib.storageapi.storage.container.hooks.StoreHook;
 import me.dessie.dessielib.storageapi.storage.settings.StorageSettings;
-import org.bukkit.Bukkit;
 
 import java.io.File;
 import java.io.FileReader;
@@ -47,15 +46,19 @@ public class JSONContainer extends StorageContainer implements ArrayContainer {
         this.json = jsonFile;
 
         try {
-            if(!this.getJson().exists() && ((this.getJson().getParentFile() != null && !this.getJson().getParentFile().mkdirs()) | !this.getJson().createNewFile())) {
-                Bukkit.getLogger().severe("Unable to create JSON file " + this.getJson().getName());
+            //Create the file.
+            if(this.getJson().getParentFile() != null) {
+                this.getJson().getParentFile().mkdirs();
             }
+            this.getJson().createNewFile();
 
             //If it's empty and exists, setup the basic object structure.
             if(this.getJson().exists() && this.getJson().length() == 0) {
                 FileWriter writer = new FileWriter(this.getJson());
                 writer.write("{}");
                 writer.close();
+            } else {
+                throw new IOException("Unable to find file " + this.getJson().getName());
             }
 
             this.object = JsonParser.parseReader(new FileReader(this.getJson())).getAsJsonObject();

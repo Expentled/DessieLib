@@ -5,8 +5,8 @@ import me.dessie.dessielib.storageapi.storage.container.StorageContainer;
 
 public class StorageSettings {
 
-    private final int cacheDuration;
-    private final int update;
+    private int cacheDuration;
+    private int update;
 
     /**
      * Creates a settings instance for a {@link StorageContainer} with a 1-minute cache duration and 5-minute update timer.
@@ -66,5 +66,30 @@ public class StorageSettings {
      */
     public int getUpdate() {
         return update;
+    }
+
+    /**
+     * Sets how long a cached object is cached in seconds.
+     *
+     * @param cacheDuration The new cache duration.
+     * @return The StorageSettings instance.
+     */
+    public StorageSettings setCacheDuration(int cacheDuration) {
+        this.cacheDuration = cacheDuration;
+        return this;
+    }
+
+    /**
+     * Sets how often the entire cache is pushed to the data structure in seconds.
+     * Set to -1 to never auto-update the cache.
+     *
+     * @see StorageContainer#flush()
+     *
+     * @param update How often, in seconds, to push the cache to the container.
+     * @return The StorageSettings instance.
+     */
+    public StorageSettings setUpdate(int update) {
+        this.update = update;
+        return this;
     }
 }

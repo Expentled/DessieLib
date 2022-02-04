@@ -2,7 +2,10 @@ package me.dessie.dessielib.storageapi.storage.cache;
 
 import me.dessie.dessielib.storageapi.storage.container.StorageContainer;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class StorageCache {
     private final Map<String, CachedObject> cache = new HashMap<>();
@@ -92,19 +95,19 @@ public class StorageCache {
     public void flush(StorageContainer container) {
         if(this.getSetCache().isEmpty() && this.getRemoveCache().isEmpty()) return;
 
+        Map<String, Object> tempSetCache = new HashMap<>(this.getSetCache());
         List<String> tempRemoveCache = new ArrayList<>(this.getRemoveCache());
 
-        //We don't have to clear the setCache and removeCache because delete does that already
-        //We also can't use a for loop since that would throw a ConcurrentModification
-        Iterator<String> it = this.getSetCache().keySet().iterator();
-        while(it.hasNext()) {
-            String path = it.next();
-            container.store(path, this.getSetCache().get(path));
+        for(String key : tempSetCache.keySet()) {
+            container.store(key, this.getSetCache().get(key));
         }
 
         for(String path : tempRemoveCache) {
             container.delete(path);
         }
+
+        this.getSetCache().clear();
+        this.getRemoveCache().clear();
     }
 
     /**
