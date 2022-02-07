@@ -22,7 +22,10 @@ public class BlockStopDamageEvent extends BlockEvent implements Cancellable {
     /**
      * @param player The Player that stopped breaking a block
      * @param theBlock The block that the player was breaking.
+     *
+     * @deprecated Since Spigot 1.18.1 {@link org.bukkit.event.block.BlockDamageAbortEvent} has been added.
      */
+    @Deprecated
     public BlockStopDamageEvent(Player player, Block theBlock) {
         super(theBlock);
         this.player = player;

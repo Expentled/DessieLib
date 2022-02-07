@@ -47,6 +47,7 @@ public class BlockListener implements Listener, PacketListener {
 
     @PacketeerHandler
     public void onBlockDestroy(ServerboundPlayerActionPacket packet, Player player) {
+        //TODO Use new BlockDamageAbortEvent provided by Spigot 1.18.
         if(packet.getAction() == ServerboundPlayerActionPacket.Action.ABORT_DESTROY_BLOCK || packet.getAction() == ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK) {
             BlockPos pos = packet.getPos();
             Bukkit.getPluginManager().callEvent(new BlockStopDamageEvent(player, player.getWorld().getBlockAt(pos.getX(), pos.getY(), pos.getZ())));
@@ -91,7 +92,7 @@ public class BlockListener implements Listener, PacketListener {
         }
 
         Bukkit.getScheduler().runTaskLater(this.getPlugin(), () -> {
-            event.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.SLOW_DIGGING, Integer.MAX_VALUE, 4, false, false, false));
+            event.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.SLOW_DIGGING, Integer.MAX_VALUE, -1, false, false, false));
         }, 2);
 
         AtomicDouble progress = new AtomicDouble(0);

@@ -1,4 +1,3 @@
-me.dessie.dessielib
 me.dessie.dessielib.commandapi
 me.dessie.dessielib.core.events.slot
 me.dessie.dessielib.core.utils
@@ -11,7 +10,6 @@ me.dessie.dessielib.enchantmentapi.activator
 me.dessie.dessielib.enchantmentapi.listener
 me.dessie.dessielib.enchantmentapi.properties
 me.dessie.dessielib.enchantmentapi.utils
-me.dessie.dessielib.experimental
 me.dessie.dessielib.inventoryapi
 me.dessie.dessielib.packeteer
 me.dessie.dessielib.particleapi
@@ -21,7 +19,6 @@ me.dessie.dessielib.particleapi.shapes
 me.dessie.dessielib.particleapi.transform
 me.dessie.dessielib.particleapi.transform.transformations
 me.dessie.dessielib.particleapi.wrapper
-me.dessie.dessielib.registration
 me.dessie.dessielib.resourcepack
 me.dessie.dessielib.resourcepack.assets
 me.dessie.dessielib.resourcepack.hash
@@ -34,6 +31,7 @@ me.dessie.dessielib.storageapi.storage.cache
 me.dessie.dessielib.storageapi.storage.container
 me.dessie.dessielib.storageapi.storage.container.hooks
 me.dessie.dessielib.storageapi.storage.decomposition
+me.dessie.dessielib.storageapi.storage.decomposition.annotations
 me.dessie.dessielib.storageapi.storage.format.flatfile
 me.dessie.dessielib.storageapi.storage.format.mysql
 me.dessie.dessielib.storageapi.storage.format.mysql.column
