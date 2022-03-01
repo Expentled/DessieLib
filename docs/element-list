@@ -4,6 +4,7 @@ me.dessie.dessielib.core.utils
 me.dessie.dessielib.core.utils.base64
 me.dessie.dessielib.core.utils.json
 me.dessie.dessielib.core.utils.runnables
+me.dessie.dessielib.core.utils.tuple
 me.dessie.dessielib.core.utils.zipper
 me.dessie.dessielib.enchantmentapi
 me.dessie.dessielib.enchantmentapi.activator

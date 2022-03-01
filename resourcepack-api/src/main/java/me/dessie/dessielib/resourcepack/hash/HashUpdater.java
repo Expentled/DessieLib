@@ -54,7 +54,7 @@ public class HashUpdater {
      * Compares the provided ZipFiles and determines if they are similar.
      *
      * @return True if the files are the same, false if they are different.
-     * @throws IOException
+     * @throws IOException If IOException occurs
      */
     private boolean compare() throws IOException {
         return FileUtils.contentEquals(this.getNewFile(), this.getOldFile());

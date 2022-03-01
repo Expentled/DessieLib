@@ -1,22 +1,29 @@
 package me.dessie.dessielib.storageapi.storage.format.flatfile;
 
+import me.dessie.dessielib.core.utils.tuple.Pair;
 import me.dessie.dessielib.storageapi.storage.container.ArrayContainer;
 import me.dessie.dessielib.storageapi.storage.container.StorageContainer;
 import me.dessie.dessielib.storageapi.storage.container.hooks.DeleteHook;
 import me.dessie.dessielib.storageapi.storage.container.hooks.RetrieveHook;
 import me.dessie.dessielib.storageapi.storage.container.hooks.StoreHook;
+import me.dessie.dessielib.storageapi.storage.decomposition.RecomposedObject;
 import me.dessie.dessielib.storageapi.storage.settings.StorageSettings;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.BiConsumer;
 
 /**
  * A {@link StorageContainer} that stores using YAML format using {@link YamlConfiguration}.
  */
-public class YAMLContainer extends StorageContainer implements ArrayContainer {
+public class YAMLContainer extends ArrayContainer<List<Object>> {
 
     private final File yaml;
     private final YamlConfiguration configuration;
@@ -105,6 +112,81 @@ public class YAMLContainer extends StorageContainer implements ArrayContainer {
         return new RetrieveHook(path -> this.getConfiguration().get(path));
     }
 
+    @Override
+    protected List<Object> getStoreListHandler() {
+        return new ArrayList<>();
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    protected List<Object> getRetrieveListHandler(String path) {
+        return (List<Object>) this.getConfiguration().getList(path);
+    }
+
+    @Override
+    protected BiConsumer<List<Object>, List<Pair<String, Object>>> handleListObject() {
+        return ((handler, list) -> {
+            MemoryConfiguration section = new MemoryConfiguration();
+
+            for(Pair<String, Object> pair : list) {
+                if(pair.getKey() == null) {
+                    handler.add(pair.getValue());
+                } else {
+                    section.set(pair.getKey(), pair.getValue());
+                }
+            }
+
+            if(section.getKeys(false).size() != 0) {
+                handler.add(section);
+            }
+        });
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    protected <T> List<T> handleRetrieveList(List<Object> handler, RecomposedObject<T> recomposedObject) {
+        List<T> list = new ArrayList<>();
+
+        for(Object obj : handler) {
+            //Handle decomposers
+            if(obj instanceof ConfigurationSection section) {
+                for(String key : section.getKeys(false)) {
+
+                    //Handle nested decomposers
+                    if (section.get(key) instanceof ConfigurationSection nested) {
+                        try {
+                            Class<?> nestedType = Class.forName(nested.getString("classType"));
+                            recomposedObject.completeObject(key, this.handleNestedList(List.of(nested), nestedType));
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
+                            break;
+                        }
+                    } else {
+                        if (key.equalsIgnoreCase("classType")) continue;
+                        recomposedObject.completeObject(key, section.get(key));
+                    }
+
+                    list.add(recomposedObject.complete());
+                }
+            } else {
+                list.add((T) obj);
+            }
+        }
+
+        return list;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isListSupported(Class<?> clazz) {
+        return super.isListSupported(clazz) || StorageContainer.getDecomposer(clazz) != null;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isSupported(Class<?> clazz) {
         return super.isSupported(clazz) || ConfigurationSerializable.class.isAssignableFrom(clazz);

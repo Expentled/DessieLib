@@ -68,6 +68,7 @@ public class ClassUtil {
      * @param type The type of Class to get
      * @param plugin The plugin to get the classes for.
      * @param packageName The package to look in.
+     * @param <T> The type of class to get
      * @return All typed classes in the provided package within the plugin.
      */
     @SuppressWarnings("unchecked")

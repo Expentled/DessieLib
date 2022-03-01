@@ -1,24 +1,26 @@
 package me.dessie.dessielib.storageapi.storage.format.flatfile;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
+import me.dessie.dessielib.core.utils.tuple.Pair;
 import me.dessie.dessielib.storageapi.storage.container.ArrayContainer;
 import me.dessie.dessielib.storageapi.storage.container.StorageContainer;
 import me.dessie.dessielib.storageapi.storage.container.hooks.DeleteHook;
 import me.dessie.dessielib.storageapi.storage.container.hooks.RetrieveHook;
 import me.dessie.dessielib.storageapi.storage.container.hooks.StoreHook;
+import me.dessie.dessielib.storageapi.storage.decomposition.RecomposedObject;
 import me.dessie.dessielib.storageapi.storage.settings.StorageSettings;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.*;
+import java.util.function.BiConsumer;
 
 /**
  * A {@link StorageContainer} that stores using JSON format using {@link Gson}.
  */
-public class JSONContainer extends StorageContainer implements ArrayContainer {
+public class JSONContainer extends ArrayContainer<JsonArray> {
 
     private final Gson gson = new Gson().newBuilder().setPrettyPrinting().create();
     private final File json;
@@ -57,7 +59,7 @@ public class JSONContainer extends StorageContainer implements ArrayContainer {
                 FileWriter writer = new FileWriter(this.getJson());
                 writer.write("{}");
                 writer.close();
-            } else {
+            } else if(!this.getJson().exists()) {
                 throw new IOException("Unable to find file " + this.getJson().getName());
             }
 
@@ -91,70 +93,171 @@ public class JSONContainer extends StorageContainer implements ArrayContainer {
     @Override
     protected StoreHook storeHook() {
         return new StoreHook((path, data) -> {
-            JsonObject current = this.getObject();
-
             String[] tree = path.split("\\.");
-            for(int i = 0; i < tree.length; i++) {
-                if(i == tree.length - 1) {
-                    current.add(tree[i], this.getGson().toJsonTree(data));
-                    break;
-                }
-
-                if(!current.has(tree[i])) {
-                    current.add(tree[i], new JsonObject());
-                }
-                current = current.get(tree[i]).getAsJsonObject();
+            if(this.getElement(String.join(".", Arrays.copyOfRange(tree, 0, tree.length - 1)), true) instanceof JsonObject object) {
+                object.add(tree[tree.length - 1], this.getGson().toJsonTree(data));
             }
-        }).onComplete(() -> {
-            try {
-                this.write();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
-    }
-
-    @Override
-    protected DeleteHook deleteHook() {
-        return new DeleteHook(path -> {
-            JsonObject current = this.getObject();
-            String[] tree = path.split("\\.");
-
-            for(int i = 0; i < tree.length; i++) {
-                if(i == tree.length - 1) {
-                    current.remove(tree[i]);
-                    break;
-                }
-                current = current.get(tree[i]).getAsJsonObject();
-            }
-        }).onComplete(() -> {
-            try {
-                this.write();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
+        }).onComplete(this::write);
     }
 
     @Override
     protected RetrieveHook retrieveHook() {
         return new RetrieveHook(path -> {
             String[] tree = path.split("\\.");
-            JsonObject current = this.getObject();
-            for(int i = 0; i < tree.length; i++) {
-                if(i == tree.length - 1) {
-                    return this.getGson().fromJson(current.get(tree[i]), Object.class);
-                }
-                current = current.get(tree[i]).getAsJsonObject();
+            if(this.getElement(path, false) instanceof JsonObject object) {
+                return this.getGson().fromJson(object.get(tree[tree.length - 1]), Object.class);
             }
-
             return null;
         });
     }
 
-    private void write() throws IOException {
-        FileWriter writer = new FileWriter(this.getJson());
-        this.getGson().toJson(this.getObject(), writer);
-        writer.close();
+    @Override
+    protected DeleteHook deleteHook() {
+        return new DeleteHook(path -> {
+            String[] tree = path.split("\\.");
+            if(this.getElement(path, false) instanceof JsonObject object) {
+                object.remove(tree[tree.length - 1]);
+            }
+        }).onComplete(this::write);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    protected <T> List<T> handleRetrieveList(JsonArray array, RecomposedObject<T> recomposedObject) {
+        List<T> list = new ArrayList<>();
+
+        for(JsonElement element : array) {
+
+            //Handle if StorageDecomposer.
+            if(element instanceof JsonObject object) {
+                for(String key : object.keySet()) {
+
+                    //Handle nested decomposers
+                    if(object.get(key) instanceof JsonObject nested) {
+                        try {
+                            JsonArray nestedArray = new JsonArray();
+                            nestedArray.add(nested);
+
+                            Class<?> nestedType = Class.forName(nested.get("classType").getAsString());
+                            recomposedObject.completeObject(key, this.handleNestedList(nestedArray, nestedType));
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
+                            break;
+                        }
+                    } else {
+                        if(key.equalsIgnoreCase("classType")) continue;
+                        recomposedObject.completeObject(key, this.getGson().fromJson(object.get(key), Object.class));
+                    }
+                }
+
+                list.add(recomposedObject.complete());
+            } else {
+                list.add((T) this.getGson().fromJson(element, Object.class));
+            }
+        }
+
+        return list;
+    }
+
+    @Override
+    protected BiConsumer<JsonArray, List<Pair<String, Object>>> handleListObject() {
+        return ((array, list) -> {
+            JsonObject object = new JsonObject();
+
+            for(Pair<String, Object> pair : list) {
+                //If the path is null, then it's not a decomposer, so we just add that to the array directly.
+                if(pair.getKey() == null) {
+                    array.add(this.getGson().toJsonTree(pair.getValue()));
+                    continue;
+                }
+
+                //Handle nested paths.
+                if(pair.getKey().contains(".")) {
+                    String[] tree = pair.getKey().split("\\.");
+                    JsonObject temp = object;
+
+                    for(int i = 0; i < tree.length; i++) {
+                        String path = tree[i];
+
+                        if (!(temp.has(path))) {
+                            temp.add(path, new JsonObject());
+                        }
+
+                        if(i != tree.length - 1) {
+                            temp = temp.getAsJsonObject(path);
+                        } else {
+                            temp.add(path, this.getGson().toJsonTree(pair.getValue()));
+                        }
+                    }
+                    if(temp != object) {
+                        object.add(tree[0], temp);
+                    }
+                } else {
+                    object.add(pair.getKey(), this.getGson().toJsonTree(pair.getValue()));
+                }
+            }
+
+            if(object.keySet().size() != 0) {
+                array.add(object);
+            }
+        });
+    }
+
+    @Override
+    protected JsonArray getStoreListHandler() {
+        return new JsonArray();
+    }
+
+    @Override
+    protected JsonArray getRetrieveListHandler(String path) {
+        if(this.getElement(path, false) instanceof JsonArray array) return array;
+        return null;
+    }
+
+    private Map<String, JsonElement> getTree(String path, boolean create) {
+        Map<String, JsonElement> tree = new LinkedHashMap<>();
+        JsonElement current = this.getObject();
+        String[] branches = path.split("\\.");
+
+        for (String branch : branches) {
+            if (!(current instanceof JsonObject object)) continue;
+
+            if (!object.has(branch) && create) {
+                object.add(branch, new JsonObject());
+            }
+            tree.put(branch, current);
+            current = object.get(branch);
+        }
+
+        //Add the last branch.
+        tree.put(branches[branches.length - 1], current);
+        return tree;
+    }
+
+    private JsonElement getElement(String path, boolean create) {
+        if(path.equals("")) return this.getObject();
+
+        Map<String, JsonElement> tree = this.getTree(path, create);
+        List<String> keys = new ArrayList<>(tree.keySet());
+
+        return tree.get(keys.get(keys.size() - 1));
+    }
+
+    private void write() {
+        try {
+            FileWriter writer = new FileWriter(this.getJson());
+            this.getGson().toJson(this.getObject(), writer);
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isListSupported(Class<?> clazz) {
+        return super.isListSupported(clazz) || StorageContainer.getDecomposer(clazz) != null;
     }
 }

@@ -58,7 +58,6 @@ public class StorageAPI {
         return plugin;
     }
 
-
     @SuppressWarnings("unchecked")
     private static void registerAnnotatedDecomposers() {
         for(Class<Object> clazz : ClassUtil.getClasses(Object.class, StorageAPI.getPlugin(), null)) {
@@ -107,10 +106,27 @@ public class StorageAPI {
                             args.add(completed.getCompletedObject(f.getAnnotation(Stored.class).storeAs().equals("") ? f.getName() : f.getAnnotation(Stored.class).storeAs()));
                         }
 
-                        if(args.size() != constructor.getParameterCount()) {
-                            throw new IllegalStateException("Cannot use Annotations to add a Recomposer for " + clazz + ". Constructor param count and recompose fields are not the same size.");
-                        } else if(!Arrays.equals(args.stream().map(Object::getClass).toArray(), Arrays.stream(constructor.getParameters()).map((param -> param.getType().isPrimitive() ? wrappers.get(param.getType()) : param.getType())).toArray())) {
-                            throw new IllegalStateException("Cannot use Annotations to add a Recomposer for " + clazz + ". Constructor and provided arguments do not match. (Make sure your fields are ordered in the same way as your constructor.)");
+                        RecomposeConstructor annotation = constructor.getAnnotation(RecomposeConstructor.class);
+                        if (args.size() != constructor.getParameterCount()) {
+                            if(annotation.throwError()) {
+                                throw new IllegalStateException("Cannot use Annotations to add a Recomposer for " + clazz.getSimpleName() + ". Constructor param count and recompose fields are not the same size.");
+                            } else return null;
+
+                        } else {
+                            //Check if the args provided and the params needed are the same types.
+                            Object[] argsArray = args.stream().map(obj -> obj == null ? null : obj.getClass()).toArray();
+                            Object[] paramArray = Arrays.stream(constructor.getParameters()).map((param -> param.getType().isPrimitive() ? wrappers.get(param.getType()) : param.getType())).toArray();
+                            for(int i = 0; i < argsArray.length; i++) {
+                                if((!annotation.allowNull() && argsArray[i] == null)) {
+                                    if(annotation.throwError()) {
+                                        throw new IllegalStateException("Cannot use Annotations to add a Recomposer for " + clazz.getSimpleName() + ". An object returned null, and the constructor will not accept. (Set allowNull to true in the RecomposeConstructor annotation to allow this.)");
+                                    } else return null;
+                                } else if(argsArray[i] != null && argsArray[i] != paramArray[i]) {
+                                    if(annotation.throwError()) {
+                                        throw new IllegalStateException("Cannot use Annotations to add a Recomposer for " + clazz.getSimpleName() + ". Constructor and provided arguments do not match. (Make sure your fields are ordered in the same way as your constructor.)");
+                                    } else return null;
+                                }
+                            }
                         }
 
                         try {
@@ -123,5 +139,9 @@ public class StorageAPI {
                 }));
             }
         }
+    }
+
+    public static Map<Class<?>, Class<?>> getWrappers() {
+        return wrappers;
     }
 }

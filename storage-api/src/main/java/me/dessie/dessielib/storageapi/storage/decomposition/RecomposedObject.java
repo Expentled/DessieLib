@@ -1,5 +1,7 @@
 package me.dessie.dessielib.storageapi.storage.decomposition;
 
+import me.dessie.dessielib.storageapi.storage.container.StorageContainer;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -139,4 +141,18 @@ public class RecomposedObject<T> {
      * @return The completed path map.
      */
     public Map<String, CompletableFuture<Object>> getCompletedPath() {return pathFutures;}
+
+    public void completeObject(String path, Object object) {
+        Objects.requireNonNull(path, "Path cannot be null!");
+        Objects.requireNonNull(this.getCompletedPath().get(path), "Path does not exist!");
+
+        this.getCompletedPath().get(path).complete(object);
+    }
+
+    public static <T> RecomposedObject<T> filled(StorageContainer container, StorageDecomposer<T> decomposer) {
+        RecomposedObject<T> recomposedObject = new RecomposedObject<>();
+        decomposer.getRecomposeFunction().apply(container, recomposedObject);
+
+        return recomposedObject;
+    }
 }

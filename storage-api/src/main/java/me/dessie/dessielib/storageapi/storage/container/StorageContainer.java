@@ -1,5 +1,7 @@
 package me.dessie.dessielib.storageapi.storage.container;
 
+import me.dessie.dessielib.core.utils.tuple.Pair;
+import me.dessie.dessielib.core.utils.tuple.Triple;
 import me.dessie.dessielib.storageapi.StorageAPI;
 import me.dessie.dessielib.storageapi.storage.cache.CachedObject;
 import me.dessie.dessielib.storageapi.storage.cache.StorageCache;
@@ -19,6 +21,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 
 public abstract class StorageContainer {
 
@@ -90,7 +93,8 @@ public abstract class StorageContainer {
      * Objects are only cached after they've initially been retrieved.
      * Therefore, this method will always return null if you haven't retrieved a path yet.
      *
-     * @see StorageContainer#retrieve(String) for retrieving data
+     * @see StorageContainer#retrieve(String)
+     * @see StorageContainer#getOrElse(String, Object)
      *
      * @param path The path to get the data from.
      * @param <T> The type to cast to
@@ -103,6 +107,24 @@ public abstract class StorageContainer {
 
         CachedObject cachedObject = this.getCache().get(path);
         return cachedObject == null ? null : (T) cachedObject.getObject();
+    }
+
+    /**
+     * Returns a cached object, or an alternative value if it doesn't exist.
+     * Objects are only cached after they've initially been retrieved.
+     *
+     * @see StorageContainer#get(String)
+     * @see StorageContainer#retrieveOrElse(String, Object)
+     *
+     * @param path The path to get the data from.
+     * @param orElse The object to return if the path does not exist or returns null.
+     * @param <T> The type to cast to
+     * @return The cached object, or null if none exists at the path.
+     * @throws ClassCastException If the cached object is not of type T
+     */
+    public <T> T getOrElse(String path, T orElse) {
+        T obtained = this.get(path);
+        return obtained == null ? orElse : obtained;
     }
 
     /**
@@ -122,6 +144,8 @@ public abstract class StorageContainer {
         if(!isSupported(data.getClass())) {
             throw new IllegalArgumentException(data.getClass() + " is not a supported storage class. Create a StorageDecomposer to implement behavior!");
         }
+
+        this.cache(path, data);
 
         this.getCache().getSetCache().put(path, data);
         this.getCache().getRemoveCache().remove(path);
@@ -154,6 +178,7 @@ public abstract class StorageContainer {
      * @param path The path to store the data to.
      * @param data The data to store in the file format.
      */
+    @SuppressWarnings("unchecked")
     public void store(String path, Object data) {
         Objects.requireNonNull(path, "Cannot store to null path!");
 
@@ -181,8 +206,66 @@ public abstract class StorageContainer {
                 //Add the placeholder for each decomposed path.
                 String decomposePath = path + ".%path%";
                 for(String decomposedPath : finalObject.getDecomposedMap().keySet()) {
-                    this.storeHook().getConsumer().accept(decomposePath.replace("%path%", decomposedPath), finalObject.getDecomposedMap().get(decomposedPath));
+                    String compiledPath = decomposePath.replace("%path%", decomposedPath);
+                    Object decomposedObject = finalObject.getDecomposedMap().get(decomposedPath);
+
+                    if(StorageContainer.getDecomposer(decomposedObject.getClass()) != null) {
+                        this.store(compiledPath, decomposedObject);
+                        continue;
+                    }
+
+                    this.storeHook().getConsumer().accept(compiledPath, decomposedObject);
                 }
+            } else if (this instanceof ArrayContainer arrayContainer && arrayContainer.isList(data)) {
+                //Verify the list can be saved.
+                arrayContainer.getListStream(data).forEach(obj -> {
+                    if (!arrayContainer.isListSupported(obj.getClass())) {
+                        throw new IllegalArgumentException(obj.getClass() + " is not a supported storage class for a list within this container!");
+                    }
+                });
+
+                //Get the Object handler for the container.
+                Object handler = arrayContainer.getStoreListHandler();
+
+                //Function to recursively adding StorageDecomposers to the handlerObject list.
+                Recursive<Function<Triple<String, Object, StorageDecomposer<?>>, List<Pair<String, Object>>>> recursive = new Recursive<>();
+                recursive.function = (triple) -> {
+                    List<Pair<String, Object>> temp = new ArrayList<>();
+                    StringBuilder currentPath = new StringBuilder(triple.getLeft());
+                    StorageDecomposer<?> composer = triple.getRight();
+
+                    for (String decomposedPath : composer.applyDecompose(triple.getMiddle()).getDecomposedMap().keySet()) {
+                        Object storedObject = composer.applyDecompose(triple.getMiddle()).getDecomposedMap().get(decomposedPath);
+                        currentPath.append(decomposedPath);
+
+                        if (StorageContainer.getDecomposer(storedObject.getClass()) != null) {
+                            currentPath.append(".");
+                            temp.addAll(recursive.function.apply(new Triple<>(currentPath.toString(), storedObject, StorageContainer.getDecomposer(storedObject.getClass()))));
+                            temp.add(new Pair<>(currentPath + "classType", storedObject.getClass().getName()));
+                        } else {
+                            temp.add(new Pair<>(currentPath.toString(), storedObject));
+                        }
+                        currentPath = new StringBuilder(triple.getLeft());
+                    }
+                    return temp;
+                };
+
+                //For each object in the list, attempt to add the decomposed object or the normal object to the handleObject list.
+                arrayContainer.getListStream(data).forEach(obj -> {
+                    List<Pair<String, Object>> storage = new ArrayList<>();
+                    StorageDecomposer<?> decomp = StorageContainer.getDecomposer(obj.getClass());
+
+                    if (decomp == null) {
+                        storage.add(new Pair<>(null, obj));
+                    } else {
+                        storage.addAll(recursive.function.apply(new Triple<>("", obj, decomp)));
+                    }
+
+                    arrayContainer.handleListObject().accept(handler, storage);
+                });
+
+                //Finally, store the handler, which should be something the container natively supports.
+                this.storeHook().getConsumer().accept(path, handler);
             } else {
                 this.storeHook().getConsumer().accept(path, data);
             }
@@ -268,7 +351,6 @@ public abstract class StorageContainer {
         }
 
         StorageDecomposer<?> decomposer = getDecomposer(type);
-        T data;
         if (decomposer != null) {
             //Only append %path% if it doesn't already exist in the String.
             //Also needs to be ran async so it doesn't block itself, very smart
@@ -287,16 +369,7 @@ public abstract class StorageContainer {
                 e.printStackTrace();
             }
         } else {
-            if (this.isCached(path)) {
-                data = this.get(path);
-            } else {
-                data = (T) this.retrieveHook().getFunction().apply(path);
-                this.retrieveHook().complete();
-
-                //Cache the object
-                this.cache(path, data);
-            }
-            return data;
+            return this.retrieve(path);
         }
         return null;
     }
@@ -330,6 +403,97 @@ public abstract class StorageContainer {
      */
     public <T> CompletableFuture<T> retrieveAsync(Class<T> type, String path) {
         return CompletableFuture.supplyAsync(() -> this.retrieve(type, path));
+    }
+
+    /**
+     * Retrieves an object directly from the data source with implicit casting.
+     * Note: This method will not recompose {@link StorageDecomposer}s.
+     *
+     * Note: This method is blocking, and will block until the data structure returns an object.
+     * It is highly recommended to only use this method if you know your data structure will not block
+     *
+     * If the data structure returns null, the provided object will be returned instead.
+     *
+     * @see StorageContainer#retrieveOrElse(String, Object) for retrieving with explicit casting, or to recompose decomposed objects.
+     * @see StorageContainer#retrieveOrElseAsync(String, Object) for retrieving data asynchronously.
+     *
+     * @param <T> The implicit type that will be cast to.
+     * @param path The path to retrieve.
+     * @param orElse The object to return if the path does not exist or returns null.
+     * @return The cast object from the path, or null if it doesn't exist.
+     */
+    public <T> T retrieveOrElse(String path, T orElse) {
+        T obtained = this.retrieve(path);
+        return obtained == null ? orElse : obtained;
+    }
+
+    /**
+     * Retrieves the object directly from the data source with explicit casting.
+     * If you want to retrieve a {@link StorageDecomposer}, you will need to use this method and provide the type.
+     *
+     * Note: This method is blocking, and will block for up to 5 seconds.
+     * It is highly recommended to only use this method if you know your data structure will not block
+     * For example, {@link me.dessie.dessielib.storageapi.storage.format.flatfile.YAMLContainer}s should be safe to use this method.
+     *
+     * If the data structure returns null, the provided object will be returned instead.
+     *
+     * @see StorageContainer#retrieveOrElse(String, Object) to get the value with implicit casting.
+     * @see StorageContainer#retrieveOrElseAsync(Class, String, Object) for retrieving data asynchronously.
+     *
+     * @param <T> The explicit type that will be cast to.
+     * @param type The type of Object to get. If this Object has a {@link StorageDecomposer}, it will be used.
+     * @param path The path to retrieve.
+     * @param orElse The object to return if the path does not exist or returns null.
+     * @return The cast object from the path, or null if it doesn't exist.
+     */
+    public <T> T retrieveOrElse(Class<T> type, String path, T orElse) {
+        T obtained = this.retrieve(type, path);
+        return obtained == null ? orElse : obtained;
+    }
+
+    /**
+     * Retrieves an object directly from the data source with implicit casting.
+     * This method is executed asynchronously, and the future will be completed when the data has been returned.
+     * Note: This method will not recompose {@link StorageDecomposer}s.
+     *
+     * If the data structure returns null, the provided object will be returned instead.
+     *
+     * @see StorageContainer#retrieveOrElseAsync(Class, String, Object) for retrieving with explicit casting, or to recompose decomposed objects.
+     *
+     * @param <T> The implicit type that will be cast to.
+     * @param path The path to retrieve.
+     * @param orElse The object to return if the path does not exist or returns null.
+     * @return The cast object from the path, or null if it doesn't exist.
+     */
+    public <T> CompletableFuture<T> retrieveOrElseAsync(String path, T orElse) {
+        CompletableFuture<T> obtained = this.retrieveAsync(path);
+        obtained.thenAccept(obj -> {
+            obtained.complete(obj == null ? orElse : obj);
+        });
+        return obtained;
+    }
+
+    /**
+     * Retrieves the object directly from the data source with explicit casting.
+     * If you want to retrieve a {@link StorageDecomposer}, you will need to use this method and provide the type.
+     * This method is executed asynchronously, and the future will be completed when the data has been returned.
+     *
+     * If the data structure returns null, the provided object will be returned instead.
+     *
+     * @see StorageContainer#retrieveOrElseAsync(String, Object) to get the value with implicit casting.
+     *
+     * @param <T> The explicit type that will be cast to.
+     * @param type The type of Object to get. If this Object has a {@link StorageDecomposer}, it will be used.
+     * @param path The path to retrieve.
+     * @param orElse The object to return if the path does not exist or returns null.
+     * @return The cast object from the path, or null if it doesn't exist.
+     */
+    public <T> CompletableFuture<T> retrieveOrElseAsync(Class<T> type, String path, T orElse) {
+        CompletableFuture<T> obtained = this.retrieveAsync(type, path);
+        obtained.thenAccept(obj -> {
+            obtained.complete(obj == null ? orElse : obj);
+        });
+        return obtained;
     }
 
     /**
@@ -403,6 +567,7 @@ public abstract class StorageContainer {
         if(clazz.isPrimitive()) return true;
         if(clazz == String.class) return true;
         if(getDecomposer(clazz) != null) return true;
+        if(StorageAPI.getWrappers().containsValue(clazz)) return true;
         if(this instanceof ArrayContainer && (clazz.isArray() || Collection.class.isAssignableFrom(clazz))) return true;
 
         return false;
@@ -422,6 +587,24 @@ public abstract class StorageContainer {
     }
 
     /**
+     * Adds an Enum decomposer to support directly storing and obtaining Enums from the container.
+     * @param <T> The type of Enum to register
+     * @param enumType The Enum class to register.
+     */
+    public static <T extends Enum<T>> void addStorageEnum(Class<T> enumType) {
+        StorageContainer.addStorageDecomposer(new StorageDecomposer<>(enumType, (e) -> {
+            DecomposedObject object = new DecomposedObject();
+            object.addDecomposedKey("value", e.name());
+
+            return object;
+        }, (container, recompose) -> {
+            recompose.addRecomposeKey("value", container::retrieveAsync);
+
+            return recompose.onComplete(completed -> Enum.valueOf(enumType, (String) completed.getCompletedObject("value")));
+        }));
+    }
+
+    /**
      * Returns a {@link StorageDecomposer} from the class instance.
      *
      * @param clazz The class to get the decomposer for.
@@ -437,5 +620,9 @@ public abstract class StorageContainer {
      */
     public static List<StorageDecomposer<?>> getStorageDecomposers() {
         return storageDecomposers;
+    }
+
+    public static class Recursive<T> {
+        public T function;
     }
 }
