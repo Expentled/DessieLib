@@ -20,8 +20,6 @@ import java.util.stream.Stream;
 
 /**
  * A {@link StorageContainer} that stores using JSON format using {@link Gson}.
- *
- * //TODO Use retrieveCorrect when implementing getObjectFromNested
  */
 public class JSONContainer extends RetrieveArrayContainer<JsonArray, JsonObject> {
 
