@@ -3,7 +3,7 @@ package me.dessie.dessielib.commandapi;
 import me.dessie.dessielib.core.utils.Colors;
 import org.bukkit.Bukkit;
 import org.bukkit.command.*;
-import org.bukkit.craftbukkit.v1_18_R1.CraftServer;
+import org.bukkit.craftbukkit.v1_18_R2.CraftServer;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.StringUtil;

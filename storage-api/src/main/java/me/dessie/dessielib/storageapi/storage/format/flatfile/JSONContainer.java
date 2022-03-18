@@ -1,13 +1,13 @@
 package me.dessie.dessielib.storageapi.storage.format.flatfile;
 
 import com.google.gson.*;
+import com.google.gson.internal.LinkedTreeMap;
 import me.dessie.dessielib.core.utils.tuple.Pair;
-import me.dessie.dessielib.storageapi.storage.container.ArrayContainer;
+import me.dessie.dessielib.storageapi.storage.container.RetrieveArrayContainer;
 import me.dessie.dessielib.storageapi.storage.container.StorageContainer;
 import me.dessie.dessielib.storageapi.storage.container.hooks.DeleteHook;
 import me.dessie.dessielib.storageapi.storage.container.hooks.RetrieveHook;
 import me.dessie.dessielib.storageapi.storage.container.hooks.StoreHook;
-import me.dessie.dessielib.storageapi.storage.decomposition.RecomposedObject;
 import me.dessie.dessielib.storageapi.storage.settings.StorageSettings;
 
 import java.io.File;
@@ -16,11 +16,14 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 
 /**
  * A {@link StorageContainer} that stores using JSON format using {@link Gson}.
+ *
+ * //TODO Use retrieveCorrect when implementing getObjectFromNested
  */
-public class JSONContainer extends ArrayContainer<JsonArray> {
+public class JSONContainer extends RetrieveArrayContainer<JsonArray, JsonObject> {
 
     private final Gson gson = new Gson().newBuilder().setPrettyPrinting().create();
     private final File json;
@@ -105,7 +108,7 @@ public class JSONContainer extends ArrayContainer<JsonArray> {
         return new RetrieveHook(path -> {
             String[] tree = path.split("\\.");
             if(this.getElement(path, false) instanceof JsonObject object) {
-                return this.getGson().fromJson(object.get(tree[tree.length - 1]), Object.class);
+                return retrieveCorrectly(object, tree[tree.length - 1]);
             }
             return null;
         });
@@ -121,42 +124,42 @@ public class JSONContainer extends ArrayContainer<JsonArray> {
         }).onComplete(this::write);
     }
 
+
     @Override
-    @SuppressWarnings("unchecked")
-    protected <T> List<T> handleRetrieveList(JsonArray array, RecomposedObject<T> recomposedObject) {
-        List<T> list = new ArrayList<>();
+    protected BiConsumer<JsonArray, JsonObject> add() {
+        return JsonArray::add;
+    }
 
-        for(JsonElement element : array) {
+    @Override
+    protected Stream<Object> getHandlerStream(JsonArray handler) {
+        Stream.Builder<Object> builder = Stream.builder();
+        handler.forEach(builder::add);
+        return builder.build();
+    }
 
-            //Handle if StorageDecomposer.
-            if(element instanceof JsonObject object) {
-                for(String key : object.keySet()) {
+    @Override
+    protected Stream<String> getNestedKeys(JsonObject nested) {
+        return nested.keySet().stream();
+    }
 
-                    //Handle nested decomposers
-                    if(object.get(key) instanceof JsonObject nested) {
-                        try {
-                            JsonArray nestedArray = new JsonArray();
-                            nestedArray.add(nested);
+    @Override
+    protected boolean isHandler(Object object) {
+        return object instanceof JsonArray;
+    }
 
-                            Class<?> nestedType = Class.forName(nested.get("classType").getAsString());
-                            recomposedObject.completeObject(key, this.handleNestedList(nestedArray, nestedType));
-                        } catch (ClassNotFoundException e) {
-                            e.printStackTrace();
-                            break;
-                        }
-                    } else {
-                        if(key.equalsIgnoreCase("classType")) continue;
-                        recomposedObject.completeObject(key, this.getGson().fromJson(object.get(key), Object.class));
-                    }
-                }
+    @Override
+    protected boolean isNested(Object object) {
+        return object instanceof JsonObject;
+    }
 
-                list.add(recomposedObject.complete());
-            } else {
-                list.add((T) this.getGson().fromJson(element, Object.class));
-            }
-        }
+    @Override
+    protected Object getObjectFromNested(JsonObject nested, String key) {
+        return retrieveCorrectly(nested, key);
+    }
 
-        return list;
+    @Override
+    protected Object getPrimitive(Object object) {
+        return this.getGson().fromJson((JsonElement) object, Object.class);
     }
 
     @Override
@@ -212,6 +215,15 @@ public class JSONContainer extends ArrayContainer<JsonArray> {
     protected JsonArray getRetrieveListHandler(String path) {
         if(this.getElement(path, false) instanceof JsonArray array) return array;
         return null;
+    }
+
+    private Object retrieveCorrectly(JsonObject object, String key) {
+        Object retrieve = this.getGson().fromJson(object.get(key), Object.class);
+        if(retrieve.getClass() == Double.class && !object.get(key).getAsString().contains(".")) {
+            return object.get(key).getAsInt();
+        } else if(retrieve instanceof LinkedTreeMap<?,?> || retrieve instanceof ArrayList) {
+            return object.get(key);
+        } else return retrieve;
     }
 
     private Map<String, JsonElement> getTree(String path, boolean create) {

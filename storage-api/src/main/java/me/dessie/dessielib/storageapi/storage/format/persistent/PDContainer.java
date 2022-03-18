@@ -8,8 +8,8 @@ import me.dessie.dessielib.storageapi.storage.container.hooks.StoreHook;
 import me.dessie.dessielib.storageapi.storage.settings.StorageSettings;
 import net.minecraft.nbt.*;
 import org.bukkit.NamespacedKey;
-import org.bukkit.craftbukkit.v1_18_R1.persistence.CraftPersistentDataContainer;
-import org.bukkit.craftbukkit.v1_18_R1.persistence.CraftPersistentDataTypeRegistry;
+import org.bukkit.craftbukkit.v1_18_R2.persistence.CraftPersistentDataContainer;
+import org.bukkit.craftbukkit.v1_18_R2.persistence.CraftPersistentDataTypeRegistry;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataHolder;
 import org.bukkit.persistence.PersistentDataType;
@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 /**
- * An abstract {@link StorageContainer} that stores using the {@link PersistentDataContainer} from Spigot.\
+ * An abstract {@link StorageContainer} that stores using the {@link PersistentDataContainer} from Spigot.
  *
  * Currently, Chunks, Entities, ItemStacks and TileStates are implemented.
  *

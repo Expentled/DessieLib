@@ -1,6 +1,8 @@
 package me.dessie.dessielib.storageapi.storage.container;
 
 import me.dessie.dessielib.core.utils.tuple.Pair;
+import me.dessie.dessielib.core.utils.tuple.Triple;
+import me.dessie.dessielib.storageapi.StorageAPI;
 import me.dessie.dessielib.storageapi.storage.decomposition.RecomposedObject;
 import me.dessie.dessielib.storageapi.storage.decomposition.StorageDecomposer;
 import me.dessie.dessielib.storageapi.storage.settings.StorageSettings;
@@ -8,6 +10,8 @@ import me.dessie.dessielib.storageapi.storage.settings.StorageSettings;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
@@ -51,9 +55,9 @@ public abstract class ArrayContainer<H> extends StorageContainer {
 
     /**
      * Implementation method for returning an existing handler object on the data source.
-     * This retrieved handler object will be passed into the {@link ArrayContainer#handleRetrieveList(Object, RecomposedObject)} for recomposing the Objects.
+     * This retrieved handler object will be passed into the {@link ArrayContainer#handleRetrieveList(Object, Class)} for recomposing the Objects.
      *
-     * @see ArrayContainer#handleRetrieveList(Object, RecomposedObject)
+     * @see ArrayContainer#handleRetrieveList(Object, Class)
      *
      * @param path The path to retrieve the handler instance.
      * @return The existing handler object that exists at the data source path.
@@ -85,17 +89,19 @@ public abstract class ArrayContainer<H> extends StorageContainer {
      * This will generally involve parsing whatever handler your used, and converting all objects back into their original states
      * You can use the {@link RecomposedObject} instance provided for retrieving these objects again.
      *
+     * If the type T is not a {@link StorageDecomposer}, the passed {@link RecomposedObject} will be null.
+     *
      * @see ArrayContainer#getRetrieveListHandler(String)
      * @see RecomposedObject#completeObject(String, Object)
      * @see RecomposedObject#complete()
      *
      * @param handler The retrieved Handler from your data source.
-     * @param recomposedObject The RecomposedObject instance that will be used for recomposing your objects.
-     *                         You will only need this if the user requested a {@link StorageDecomposer} object.
+     * @param type The {@link Class} type that the list containers.
+     *             You will need to retrieve a {@link RecomposedObject} instance for all elements that will be used for recomposing your objects.
      * @param <T> The type of Object that the user wants the List to contain.
      * @return A recomposed list of the requested objects from the handler.
      */
-    protected abstract <T> List<T> handleRetrieveList(H handler, RecomposedObject<T> recomposedObject);
+    protected abstract <T> List<T> handleRetrieveList(H handler, Class<T> type);
 
     /**
      * Adds objects to the list on the path.
@@ -205,7 +211,6 @@ public abstract class ArrayContainer<H> extends StorageContainer {
      * @param <T> The type ob the Objects in the list.
      * @return The List of retrieved Objects.
      */
-    @SuppressWarnings("unchecked")
     public <T> List<T> retrieveList(Class<T> type, String path) {
         Objects.requireNonNull(type, "Class type cannot be null!");
         Objects.requireNonNull(path, "Path cannot be null!");
@@ -218,12 +223,13 @@ public abstract class ArrayContainer<H> extends StorageContainer {
             return this.get(path);
         }
 
-        StorageDecomposer<T> decomposer = (StorageDecomposer<T>) StorageContainer.getDecomposer(type);
-        RecomposedObject<T> recomposedObject = RecomposedObject.filled(this, decomposer);
-
+        List<T> list;
         H handler = this.getRetrieveListHandler(path);
-
-        List<T> list = this.handleRetrieveList(handler, recomposedObject);
+        if(StorageContainer.getDecomposer(type) != null) {
+            list = this.handleRetrieveList(handler, type);
+        } else {
+            list = this.handleRetrieveList(handler, null);
+        }
         this.cache(path, list);
         return list;
     }
@@ -284,27 +290,28 @@ public abstract class ArrayContainer<H> extends StorageContainer {
      * Helper method for retrieving Lists with nested DecomposedObjects.
      * Will return the RecomposedObject from a Handler and decomposer type.
      *
-     * @param handler The Handler to get the nested recomposed object from/
+     * @param handler The Handler to get the nested recomposed object from
      * @param decomposerType The type of the recomposed object
      * @return The RecomposedObject that was retrieved.
      */
-    protected Object handleNestedList(H handler, Class<?> decomposerType) {
+    protected Object handleNestedObject(H handler, Class<?> decomposerType) {
         StorageDecomposer<?> decomposer = StorageContainer.getDecomposer(decomposerType);
 
         if(decomposer == null) return null;
-        RecomposedObject<?> nestedRecompose = RecomposedObject.filled(this, decomposer);
-        return handleRetrieveList(handler, nestedRecompose).get(0);
+        return handleRetrieveList(handler, decomposerType).get(0);
     }
 
     /**
      * Determines if a class can be used within a Collection or Array to be stored.
-     * This supports Strings and Primitives by default, but can be overriden to support other types.
+     * This supports Strings and Primitives by default, but can be overridden to support other types.
      *
      * @param clazz The type to check.
      * @return If the specified class is able to be stored in a list.
      */
     public boolean isListSupported(Class<?> clazz) {
-        return clazz != null && clazz.isPrimitive() || clazz == String.class;
+        return clazz != null && clazz.isPrimitive()
+                || clazz == String.class
+                || StorageAPI.getWrappers().containsValue(clazz);
     }
 
     /**
@@ -314,6 +321,29 @@ public abstract class ArrayContainer<H> extends StorageContainer {
      */
     public boolean isList(Object obj) {
         return obj != null && obj.getClass().isArray() || obj instanceof Collection<?>;
+    }
+
+    /**
+     * Returns if the provided list is type of Primitive or is a String.
+     *
+     * If the provided object is not a list, false will be returned.
+     *
+     * All values must be of type primitive or String, if a single element fails,
+     * then this method will return false.
+     *
+     * @param list The list to check
+     * @return If the list contains primitive types, primitive wrappers or Strings.
+     */
+    public boolean isPrimitiveList(Object list) {
+        if(!isList(list)) return false;
+
+        Predicate<Object> predicate = (obj) -> obj.getClass() == String.class || obj.getClass().isPrimitive() || StorageAPI.getWrappers().containsValue(obj.getClass());
+
+        if(list instanceof Collection<?> collection) {
+            return collection.stream().allMatch(predicate);
+        } else {
+            return !Arrays.stream((Object[]) list).allMatch(predicate);
+        }
     }
 
     /**
@@ -330,4 +360,67 @@ public abstract class ArrayContainer<H> extends StorageContainer {
         if(list instanceof Collection<?> c) return (Stream<Object>) c.stream();
         return Arrays.stream((Object[]) list);
     }
+
+    protected H handleList(Object data) {
+        //Verify the list can be saved.
+        this.getListStream(data).forEach(obj -> {
+            if (!this.isListSupported(obj.getClass()) && !isList(data)) {
+                throw new IllegalArgumentException(obj.getClass() + " is not a supported storage class for a list within this container!");
+            }
+        });
+
+        //Get the Object handler for the container.
+        H handler = this.getStoreListHandler();
+
+        //Function to recursively adding StorageDecomposers to the handlerObject list.
+        Recursive<Function<Triple<String, Object, StorageDecomposer<?>>, List<Pair<String, Object>>>> recursive = new Recursive<>();
+        recursive.function = (triple) -> {
+            List<Pair<String, Object>> temp = new ArrayList<>();
+            StringBuilder currentPath = new StringBuilder(triple.getLeft());
+            StorageDecomposer<?> composer = triple.getRight();
+
+            for (String decomposedPath : composer.applyDecompose(triple.getMiddle()).getDecomposedMap().keySet()) {
+                Object storedObject = composer.applyDecompose(triple.getMiddle()).getDecomposedMap().get(decomposedPath);
+                currentPath.append(decomposedPath);
+
+                if (storedObject != null && StorageContainer.getDecomposer(storedObject.getClass()) != null) {
+                    StorageDecomposer<?> nestedDecomposer = StorageContainer.getDecomposer(storedObject.getClass());
+                    currentPath.append(".");
+
+                    //Check for recursive storage
+                    if(composer == nestedDecomposer) {
+                        throw new IllegalStateException("StorageDecomposer class " + storedObject.getClass().getName() + " cannot store itself, as this will cause infinite recursive storage.");
+                    }
+
+                    temp.addAll(recursive.function.apply(new Triple<>(currentPath.toString(), storedObject, nestedDecomposer)));
+                } else if(storedObject != null && this.isList(storedObject)) {
+                    temp.add(new Pair<>(currentPath.toString(), handleList(storedObject)));
+                } else {
+                    temp.add(new Pair<>(currentPath.toString(), storedObject));
+                }
+                currentPath = new StringBuilder(triple.getLeft());
+            }
+            return temp;
+        };
+
+        //For each object in the list, attempt to add the decomposed object or the normal object to the handleObject list.
+        this.getListStream(data).forEach(obj -> {
+            List<Pair<String, Object>> storage = new ArrayList<>();
+            StorageDecomposer<?> decomp = StorageContainer.getDecomposer(obj.getClass());
+
+            if (decomp == null || this.isPrimitiveList(obj)) {
+                storage.add(new Pair<>(null, obj));
+            } else if (isSupported(obj.getClass())) {
+                storage.addAll(recursive.function.apply(new Triple<>("", obj, decomp)));
+            } else {
+                throw new IllegalArgumentException(obj.getClass().getName() + " was found in List and is not supported!");
+            }
+
+            this.handleListObject().accept(handler, storage);
+        });
+
+        return handler;
+    }
+
+
 }

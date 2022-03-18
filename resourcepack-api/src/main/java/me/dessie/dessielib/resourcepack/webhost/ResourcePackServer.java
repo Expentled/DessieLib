@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.logging.Level;
 
 public class ResourcePackServer implements HttpHandler, Listener {
 
@@ -118,6 +119,9 @@ public class ResourcePackServer implements HttpHandler, Listener {
     }
 
     /**
+     * Sets the ResourcePack to send to Players when they join the server.
+     *
+     * If the server failed to start, this method will not do anything, and the pack will not be sent.
      * Note: The resource pack URL will change after this is called.
      *
      * @param pack The new ResourcePack to server players.
@@ -125,9 +129,14 @@ public class ResourcePackServer implements HttpHandler, Listener {
     public void setResourcePack(ResourcePack pack) {
         this.resourcePack = pack;
 
+        if(this.getServer() == null) {
+            Bukkit.getLogger().log(Level.WARNING, "Unable to start ResourcePackServer!");
+            return;
+        }
+
         //Setup the webserver context
         String urlPath = "/resourcepack/" + pack.getBuilder().getHash();
-        server.createContext(urlPath, this);
+        this.getServer().createContext(urlPath, this);
         this.packUrl = "http://" + this.getAddress() + ":" + this.getPort() + urlPath;
 
         //Register the EventHandler

@@ -6,6 +6,7 @@ import me.dessie.dessielib.storageapi.storage.decomposition.DecomposedObject;
 import me.dessie.dessielib.storageapi.storage.decomposition.StorageDecomposer;
 import me.dessie.dessielib.storageapi.storage.decomposition.annotations.RecomposeConstructor;
 import me.dessie.dessielib.storageapi.storage.decomposition.annotations.Stored;
+import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.lang.reflect.Constructor;
@@ -40,6 +41,9 @@ public class StorageAPI {
 
         plugin = yourPlugin;
         registered = true;
+
+        //Register the SectionSerializable class so it can be properly de-serialized.
+        ConfigurationSerialization.registerClass(SectionSerializable.class);
 
         registerAnnotatedDecomposers();
     }
@@ -96,7 +100,8 @@ public class StorageAPI {
                     return object;
                 }, (container, recompose) -> {
                     for (Field f : recomposeFields) {
-                        recompose.addRecomposeKey(f.getAnnotation(Stored.class).storeAs().equals("") ? f.getName() : f.getAnnotation(Stored.class).storeAs(), container::retrieveAsync);
+                        Stored annotation = f.getAnnotation(Stored.class);
+                        recompose.addRecomposeKey(annotation.storeAs().equals("") ? f.getName() : annotation.storeAs(), annotation.type() == Stored.class ? f.getType() : annotation.type(), container::retrieveAsync);
                     }
 
                     return recompose.onComplete(completed -> {
@@ -114,14 +119,14 @@ public class StorageAPI {
 
                         } else {
                             //Check if the args provided and the params needed are the same types.
-                            Object[] argsArray = args.stream().map(obj -> obj == null ? null : obj.getClass()).toArray();
-                            Object[] paramArray = Arrays.stream(constructor.getParameters()).map((param -> param.getType().isPrimitive() ? wrappers.get(param.getType()) : param.getType())).toArray();
+                            Class<?>[] argsArray = args.stream().map(obj -> obj == null ? null : obj.getClass()).toList().toArray(new Class<?>[0]);
+                            Class<?>[] paramArray = Arrays.stream(constructor.getParameters()).map((param -> param.getType().isPrimitive() ? wrappers.get(param.getType()) : param.getType())).toList().toArray(new Class<?>[0]);
                             for(int i = 0; i < argsArray.length; i++) {
                                 if((!annotation.allowNull() && argsArray[i] == null)) {
                                     if(annotation.throwError()) {
                                         throw new IllegalStateException("Cannot use Annotations to add a Recomposer for " + clazz.getSimpleName() + ". An object returned null, and the constructor will not accept. (Set allowNull to true in the RecomposeConstructor annotation to allow this.)");
                                     } else return null;
-                                } else if(argsArray[i] != null && argsArray[i] != paramArray[i]) {
+                                } else if(argsArray[i] != null && argsArray[i] != paramArray[i] && !paramArray[i].isAssignableFrom(argsArray[i])) {
                                     if(annotation.throwError()) {
                                         throw new IllegalStateException("Cannot use Annotations to add a Recomposer for " + clazz.getSimpleName() + ". Constructor and provided arguments do not match. (Make sure your fields are ordered in the same way as your constructor.)");
                                     } else return null;

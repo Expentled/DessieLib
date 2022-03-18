@@ -26,21 +26,26 @@ import java.util.function.Function;
  */
 public class RecomposedObject<T> {
 
-    private final Map<String, Function<String, CompletableFuture<Object>>> recomposedMap = new HashMap<>();
     private Function<RecomposedObject<T>, T> completeFunction;
-    private final Map<String, CompletableFuture<Object>> pathFutures = new HashMap<>();
+
+    private final Map<String, Function<String, CompletableFuture<Object>>> recomposedMap = new HashMap<>();
+    private final Map<String, CompletableFuture<Object>> pathCompleted = new HashMap<>();
+    private final Map<String, Class<?>> pathTypes = new HashMap<>();
 
     /**
      * Adds a recomposed path and function.
      * @param path The path to add to.
+     * @param type The type of Object to retrieve. If this is a list, the type should be the type of list.
      * @param data The Function, that accepts the path provided and returns a CompletableFuture with the
      *             Object retrieved at that path.
      *             Generally, you'll want to return {@link me.dessie.dessielib.storageapi.storage.container.StorageContainer#retrieveAsync(String)}.
      * @return The RecomposedObject instance.
      */
-    public RecomposedObject<T> addRecomposeKey(String path, Function<String, CompletableFuture<Object>> data) {
+    public RecomposedObject<T> addRecomposeKey(String path, Class<?> type, Function<String, CompletableFuture<Object>> data) {
         Objects.requireNonNull(path, "Cannot add null path!");
         Objects.requireNonNull(data, "The recompose function cannot be null!");
+
+        this.getPathTypes().put(path, type);
 
         this.getRecomposedMap().putIfAbsent(path, data.andThen(after -> {
             this.getCompletedPath().put(path, after);
@@ -118,11 +123,14 @@ public class RecomposedObject<T> {
      * This should only be called in the {@link RecomposedObject#onComplete(Function)} method.
      * This method is Thread blocking, and will wait for the Recompose Functions to be completed to return.
      *
+     * This method implicitly cast to the type you're trying to retrieve and may result in ClassCastExceptions.
+     *
      * @param path The path to get.
-     * @return The completed Object once completed by the {@link RecomposedObject#addRecomposeKey(String, Function)}.
+     * @return The completed Object once completed by the {@link RecomposedObject#addRecomposeKey(String, Class, Function)}.
      */
-    public Object getCompletedObject(String path) {
-        return pathFutures.get(path).join();
+    @SuppressWarnings("unchecked")
+    public <M> M getCompletedObject(String path) {
+        return (M) pathCompleted.get(path).join();
     }
 
     /**
@@ -140,7 +148,22 @@ public class RecomposedObject<T> {
     /**
      * @return The completed path map.
      */
-    public Map<String, CompletableFuture<Object>> getCompletedPath() {return pathFutures;}
+    public Map<String, CompletableFuture<Object>> getCompletedPath() {return pathCompleted;}
+
+    /**
+     * @return The map that maps each sub-path to a class type.
+     */
+    public Map<String, Class<?>> getPathTypes() {
+        return pathTypes;
+    }
+
+    /**
+     * @param path The sub-path to get the type for.
+     * @return The Class that this sub-path should be.
+     */
+    public Class<?> getType(String path) {
+        return this.getPathTypes().get(path);
+    }
 
     public void completeObject(String path, Object object) {
         Objects.requireNonNull(path, "Path cannot be null!");
@@ -150,8 +173,31 @@ public class RecomposedObject<T> {
     }
 
     public static <T> RecomposedObject<T> filled(StorageContainer container, StorageDecomposer<T> decomposer) {
+        Objects.requireNonNull(container, "Cannot retrieve from null container!");
+        Objects.requireNonNull(decomposer, "Cannot apply decomposition from null decomposer!");
+
         RecomposedObject<T> recomposedObject = new RecomposedObject<>();
-        decomposer.getRecomposeFunction().apply(container, recomposedObject);
+        if(decomposer.getRecomposeFunction() != null) {
+            decomposer.getRecomposeFunction().apply(container, recomposedObject);
+        }
+
+        return recomposedObject;
+    }
+
+    public static <T> RecomposedObject<T> filled(StorageContainer container, Class<T> classType) {
+        Objects.requireNonNull(container, "Cannot retrieve from null container!");
+        Objects.requireNonNull(classType, "Cannot apply decomposition from null class!");
+
+        StorageDecomposer<T> decomposer = StorageContainer.getDecomposer(classType);
+
+        if(decomposer == null) {
+            throw new IllegalArgumentException("Decomposer does not exist for " + classType.getName());
+        }
+
+        RecomposedObject<T> recomposedObject = new RecomposedObject<>();
+        if(decomposer.getRecomposeFunction() != null) {
+            decomposer.getRecomposeFunction().apply(container, recomposedObject);
+        }
 
         return recomposedObject;
     }

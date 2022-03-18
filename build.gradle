@@ -8,7 +8,7 @@ group 'me.dessie'
 version '1.2.2'
 
 //Define the Minecraft and SpecialSource Versions.
-String minecraftVersion = "1.18.1-R0.1-SNAPSHOT"
+String minecraftVersion = "1.18.2-R0.1-SNAPSHOT"
 String specialSourceVersion = "1.11.0"
 
 //Apply the java plugin across subprojects.
@@ -69,19 +69,20 @@ project.gradle.projectsEvaluated {
 
         //Repositories that all modules use.
         repositories {
-            mavenLocal()
             mavenCentral()
+            mavenLocal()
         }
 
         dependencies {
             //All modules depend on Spigot, duh.
             compileOnly "org.spigotmc:spigot:${minecraftVersion}:remapped-mojang"
+            compileOnly "org.spigotmc:spigot-api:${minecraftVersion}"
 
             //Only used so Spigot Sources do not have annotation errors.
             compileOnly 'org.jetbrains:annotations:16.0.2'
 
             //SpecialSource dependency
-            compileOnly "net.md-5:SpecialSource:${specialSourceVersion}:shaded"
+            compileOnly"net.md-5:SpecialSource:${specialSourceVersion}:shaded"
         }
     }
 }

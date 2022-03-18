@@ -1,7 +1,5 @@
 package me.dessie.dessielib.storageapi.storage.container;
 
-import me.dessie.dessielib.core.utils.tuple.Pair;
-import me.dessie.dessielib.core.utils.tuple.Triple;
 import me.dessie.dessielib.storageapi.StorageAPI;
 import me.dessie.dessielib.storageapi.storage.cache.CachedObject;
 import me.dessie.dessielib.storageapi.storage.cache.StorageCache;
@@ -21,7 +19,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
 
 public abstract class StorageContainer {
 
@@ -56,7 +53,6 @@ public abstract class StorageContainer {
 
         //The repeating task to push add modified changes to the data source.
         //Uses the settings for the length.
-
         if(this.getSettings().getUpdate() > 0) {
             Bukkit.getScheduler().runTaskTimer(StorageAPI.getPlugin(), () -> {
                 this.getCache().flush(this);
@@ -178,7 +174,6 @@ public abstract class StorageContainer {
      * @param path The path to store the data to.
      * @param data The data to store in the file format.
      */
-    @SuppressWarnings("unchecked")
     public void store(String path, Object data) {
         Objects.requireNonNull(path, "Cannot store to null path!");
 
@@ -209,7 +204,7 @@ public abstract class StorageContainer {
                     String compiledPath = decomposePath.replace("%path%", decomposedPath);
                     Object decomposedObject = finalObject.getDecomposedMap().get(decomposedPath);
 
-                    if(StorageContainer.getDecomposer(decomposedObject.getClass()) != null) {
+                    if(decomposedObject != null && StorageContainer.getDecomposer(decomposedObject.getClass()) != null) {
                         this.store(compiledPath, decomposedObject);
                         continue;
                     }
@@ -217,55 +212,7 @@ public abstract class StorageContainer {
                     this.storeHook().getConsumer().accept(compiledPath, decomposedObject);
                 }
             } else if (this instanceof ArrayContainer arrayContainer && arrayContainer.isList(data)) {
-                //Verify the list can be saved.
-                arrayContainer.getListStream(data).forEach(obj -> {
-                    if (!arrayContainer.isListSupported(obj.getClass())) {
-                        throw new IllegalArgumentException(obj.getClass() + " is not a supported storage class for a list within this container!");
-                    }
-                });
-
-                //Get the Object handler for the container.
-                Object handler = arrayContainer.getStoreListHandler();
-
-                //Function to recursively adding StorageDecomposers to the handlerObject list.
-                Recursive<Function<Triple<String, Object, StorageDecomposer<?>>, List<Pair<String, Object>>>> recursive = new Recursive<>();
-                recursive.function = (triple) -> {
-                    List<Pair<String, Object>> temp = new ArrayList<>();
-                    StringBuilder currentPath = new StringBuilder(triple.getLeft());
-                    StorageDecomposer<?> composer = triple.getRight();
-
-                    for (String decomposedPath : composer.applyDecompose(triple.getMiddle()).getDecomposedMap().keySet()) {
-                        Object storedObject = composer.applyDecompose(triple.getMiddle()).getDecomposedMap().get(decomposedPath);
-                        currentPath.append(decomposedPath);
-
-                        if (StorageContainer.getDecomposer(storedObject.getClass()) != null) {
-                            currentPath.append(".");
-                            temp.addAll(recursive.function.apply(new Triple<>(currentPath.toString(), storedObject, StorageContainer.getDecomposer(storedObject.getClass()))));
-                            temp.add(new Pair<>(currentPath + "classType", storedObject.getClass().getName()));
-                        } else {
-                            temp.add(new Pair<>(currentPath.toString(), storedObject));
-                        }
-                        currentPath = new StringBuilder(triple.getLeft());
-                    }
-                    return temp;
-                };
-
-                //For each object in the list, attempt to add the decomposed object or the normal object to the handleObject list.
-                arrayContainer.getListStream(data).forEach(obj -> {
-                    List<Pair<String, Object>> storage = new ArrayList<>();
-                    StorageDecomposer<?> decomp = StorageContainer.getDecomposer(obj.getClass());
-
-                    if (decomp == null) {
-                        storage.add(new Pair<>(null, obj));
-                    } else {
-                        storage.addAll(recursive.function.apply(new Triple<>("", obj, decomp)));
-                    }
-
-                    arrayContainer.handleListObject().accept(handler, storage);
-                });
-
-                //Finally, store the handler, which should be something the container natively supports.
-                this.storeHook().getConsumer().accept(path, handler);
+                this.storeHook().getConsumer().accept(path, arrayContainer.handleList(data));
             } else {
                 this.storeHook().getConsumer().accept(path, data);
             }
@@ -598,7 +545,7 @@ public abstract class StorageContainer {
 
             return object;
         }, (container, recompose) -> {
-            recompose.addRecomposeKey("value", container::retrieveAsync);
+            recompose.addRecomposeKey("value", enumType, container::retrieveAsync);
 
             return recompose.onComplete(completed -> Enum.valueOf(enumType, (String) completed.getCompletedObject("value")));
         }));
@@ -610,9 +557,13 @@ public abstract class StorageContainer {
      * @param clazz The class to get the decomposer for.
      * @return The registered StorageDecomposer for the provided class, or null if it doesn't exist.
      */
-    public static StorageDecomposer<?> getDecomposer(Class<?> clazz) {
+    @SuppressWarnings("unchecked")
+    public static <T> StorageDecomposer<T> getDecomposer(Class<T> clazz) {
         if(clazz == null) return null;
-        return getStorageDecomposers().stream().filter(decomposer -> decomposer.getType() == clazz).findFirst().orElse(null);
+        return getStorageDecomposers().stream()
+                .filter(decomposer -> decomposer.getType() == clazz)
+                .map(composer -> (StorageDecomposer<T>) composer)
+                .findFirst().orElse(null);
     }
 
     /**

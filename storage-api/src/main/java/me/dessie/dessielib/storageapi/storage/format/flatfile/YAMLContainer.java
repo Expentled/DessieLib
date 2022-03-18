@@ -1,16 +1,14 @@
 package me.dessie.dessielib.storageapi.storage.format.flatfile;
 
 import me.dessie.dessielib.core.utils.tuple.Pair;
-import me.dessie.dessielib.storageapi.storage.container.ArrayContainer;
+import me.dessie.dessielib.storageapi.SectionSerializable;
+import me.dessie.dessielib.storageapi.storage.container.RetrieveArrayContainer;
 import me.dessie.dessielib.storageapi.storage.container.StorageContainer;
 import me.dessie.dessielib.storageapi.storage.container.hooks.DeleteHook;
 import me.dessie.dessielib.storageapi.storage.container.hooks.RetrieveHook;
 import me.dessie.dessielib.storageapi.storage.container.hooks.StoreHook;
-import me.dessie.dessielib.storageapi.storage.decomposition.RecomposedObject;
 import me.dessie.dessielib.storageapi.storage.settings.StorageSettings;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 
@@ -19,11 +17,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 
 /**
  * A {@link StorageContainer} that stores using YAML format using {@link YamlConfiguration}.
  */
-public class YAMLContainer extends ArrayContainer<List<Object>> {
+public class YAMLContainer extends RetrieveArrayContainer<List<Object>, SectionSerializable> {
 
     private final File yaml;
     private final YamlConfiguration configuration;
@@ -120,18 +119,34 @@ public class YAMLContainer extends ArrayContainer<List<Object>> {
     @Override
     @SuppressWarnings("unchecked")
     protected List<Object> getRetrieveListHandler(String path) {
-        return (List<Object>) this.getConfiguration().getList(path);
+        if(!this.getConfiguration().isList(path)) throw new IllegalArgumentException("List not found at path " + path);
+        List<Object> list = (List<Object>) this.getConfiguration().getList(path);
+        return list;
     }
 
     @Override
     protected BiConsumer<List<Object>, List<Pair<String, Object>>> handleListObject() {
         return ((handler, list) -> {
-            MemoryConfiguration section = new MemoryConfiguration();
+            SectionSerializable section = new SectionSerializable();
 
             for(Pair<String, Object> pair : list) {
                 if(pair.getKey() == null) {
                     handler.add(pair.getValue());
                 } else {
+                    //Manually iterate through and add new SectionSerializable so Spigot doesn't generate the bad
+                    //Non-serializable MemorySections.
+
+                    if(pair.getKey().contains(".")) {
+                        String[] keys = pair.getKey().split("\\.");
+                        StringBuilder path = new StringBuilder();
+                        for(int i = 0; i < keys.length - 1; i++) {
+                            SectionSerializable temp = new SectionSerializable();
+                            if(i != 0) path.append(".");
+                            path.append(keys[i]);
+
+                            section.set(path.toString(), temp);
+                        }
+                    }
                     section.set(pair.getKey(), pair.getValue());
                 }
             }
@@ -143,37 +158,38 @@ public class YAMLContainer extends ArrayContainer<List<Object>> {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    protected <T> List<T> handleRetrieveList(List<Object> handler, RecomposedObject<T> recomposedObject) {
-        List<T> list = new ArrayList<>();
+    protected BiConsumer<List<Object>, SectionSerializable> add() {
+        return List::add;
+    }
 
-        for(Object obj : handler) {
-            //Handle decomposers
-            if(obj instanceof ConfigurationSection section) {
-                for(String key : section.getKeys(false)) {
+    @Override
+    protected Stream<Object> getHandlerStream(List<Object> handler) {
+        return handler.stream();
+    }
 
-                    //Handle nested decomposers
-                    if (section.get(key) instanceof ConfigurationSection nested) {
-                        try {
-                            Class<?> nestedType = Class.forName(nested.getString("classType"));
-                            recomposedObject.completeObject(key, this.handleNestedList(List.of(nested), nestedType));
-                        } catch (ClassNotFoundException e) {
-                            e.printStackTrace();
-                            break;
-                        }
-                    } else {
-                        if (key.equalsIgnoreCase("classType")) continue;
-                        recomposedObject.completeObject(key, section.get(key));
-                    }
+    @Override
+    protected Stream<String> getNestedKeys(SectionSerializable nested) {
+        return nested.getKeys(false).stream().filter(key -> !key.equalsIgnoreCase("=="));
+    }
 
-                    list.add(recomposedObject.complete());
-                }
-            } else {
-                list.add((T) obj);
-            }
-        }
+    @Override
+    protected boolean isHandler(Object object) {
+        return object instanceof List<?>;
+    }
 
-        return list;
+    @Override
+    protected boolean isNested(Object object) {
+        return object instanceof SectionSerializable;
+    }
+
+    @Override
+    protected Object getObjectFromNested(SectionSerializable nested, String key) {
+        return nested.get(key);
+    }
+
+    @Override
+    protected Object getPrimitive(Object object) {
+        return object;
     }
 
     /**

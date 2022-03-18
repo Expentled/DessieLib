@@ -50,8 +50,7 @@ public class StorageDecomposer<T> {
      *                          This accepts the {@link StorageContainer} and the {@link RecomposedObject}, and should return a CompletableFuture for returning the final Object.
      * @see DecomposedObject
      * @see DecomposedObject#addDecomposedKey(String, Object)
-     * @see RecomposedObject
-     * @see RecomposedObject#addRecomposeKey(String, Function)
+     * @see RecomposedObject#addRecomposeKey(String, Class, Function)
      * @see RecomposedObject#addCompletedRecomposeKey(String, Function)
      */
     public StorageDecomposer(Class<T> type, Function<T, DecomposedObject> decomposeFunction, BiFunction<StorageContainer, RecomposedObject<T>, CompletableFuture<T>> recomposeFunction) {

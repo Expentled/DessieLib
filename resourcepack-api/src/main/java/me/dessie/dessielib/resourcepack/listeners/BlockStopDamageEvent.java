@@ -62,4 +62,12 @@ public class BlockStopDamageEvent extends BlockEvent implements Cancellable {
     public void setCancelled(boolean cancelled) {
         this.cancelled = cancelled;
     }
+
+    /**
+     * Required Spigot Event method.
+     * @return The HANDLERs list.
+     */
+    public static HandlerList getHandlerList() {
+        return HANDLERS;
+    }
 }
