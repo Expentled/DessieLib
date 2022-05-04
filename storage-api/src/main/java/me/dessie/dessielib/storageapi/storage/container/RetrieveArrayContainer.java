@@ -112,15 +112,19 @@ public abstract class RetrieveArrayContainer<H, N> extends ArrayContainer<H> {
             this.getNestedKeys(obj).forEach(key -> {
                 Object fromKey = this.getObjectFromNested(obj, key);
 
-                if(isNested(fromKey)) {
-                    H newHandler = this.getStoreListHandler();
-                    this.add().accept(newHandler, (N) fromKey);
-                    recomposedObject.completeObject(key, this.handleNestedObject(newHandler, recomposedObject.getType(key)));
-                } else if (isHandler(fromKey)) {
-                    Class<?> nestedClass = recomposedObject.getType(key);
-                    recomposedObject.completeObject(key, this.handleRetrieveList((H) fromKey, StorageContainer.getDecomposer(nestedClass) == null ? null : nestedClass));
-                } else {
-                    recomposedObject.completeObject(key, fromKey);
+                try {
+                    if(isNested(fromKey)) {
+                        H newHandler = this.getStoreListHandler();
+                        this.add().accept(newHandler, (N) fromKey);
+                        recomposedObject.completeObject(key, this.handleNestedObject(newHandler, recomposedObject.getType(key)));
+                    } else if (isHandler(fromKey)) {
+                        Class<?> nestedClass = recomposedObject.getType(key);
+                        recomposedObject.completeObject(key, this.handleRetrieveList((H) fromKey, StorageContainer.getDecomposer(nestedClass) == null ? null : nestedClass));
+                    } else {
+                        recomposedObject.completeObject(key, fromKey);
+                    }
+                } catch (IllegalArgumentException ignored) {
+                    //TODO Probably should remove un-used paths from the file if they're detected.
                 }
             });
 

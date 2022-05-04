@@ -8,7 +8,9 @@ import me.dessie.dessielib.storageapi.storage.container.hooks.DeleteHook;
 import me.dessie.dessielib.storageapi.storage.container.hooks.RetrieveHook;
 import me.dessie.dessielib.storageapi.storage.container.hooks.StoreHook;
 import me.dessie.dessielib.storageapi.storage.settings.StorageSettings;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 
@@ -22,7 +24,7 @@ import java.util.stream.Stream;
 /**
  * A {@link StorageContainer} that stores using YAML format using {@link YamlConfiguration}.
  */
-public class YAMLContainer extends RetrieveArrayContainer<List<Object>, SectionSerializable> {
+public class YAMLContainer extends RetrieveArrayContainer<List<Object>, ConfigurationSection> {
 
     private final File yaml;
     private final YamlConfiguration configuration;
@@ -119,15 +121,18 @@ public class YAMLContainer extends RetrieveArrayContainer<List<Object>, SectionS
     @Override
     @SuppressWarnings("unchecked")
     protected List<Object> getRetrieveListHandler(String path) {
-        if(!this.getConfiguration().isList(path)) throw new IllegalArgumentException("List not found at path " + path);
-        List<Object> list = (List<Object>) this.getConfiguration().getList(path);
+        if(this.getConfiguration().get(path) != null && !this.getConfiguration().isList(path)) {
+            throw new IllegalArgumentException("List not found at path " + path);
+        }
+
+        List<Object> list = this.getConfiguration().get(path) != null ? (List<Object>) this.getConfiguration().getList(path) : new ArrayList<>();
         return list;
     }
 
     @Override
     protected BiConsumer<List<Object>, List<Pair<String, Object>>> handleListObject() {
         return ((handler, list) -> {
-            SectionSerializable section = new SectionSerializable();
+            ConfigurationSection section = new SectionSerializable();
 
             for(Pair<String, Object> pair : list) {
                 if(pair.getKey() == null) {
@@ -140,7 +145,7 @@ public class YAMLContainer extends RetrieveArrayContainer<List<Object>, SectionS
                         String[] keys = pair.getKey().split("\\.");
                         StringBuilder path = new StringBuilder();
                         for(int i = 0; i < keys.length - 1; i++) {
-                            SectionSerializable temp = new SectionSerializable();
+                            ConfigurationSection temp = new MemoryConfiguration();
                             if(i != 0) path.append(".");
                             path.append(keys[i]);
 
@@ -158,7 +163,7 @@ public class YAMLContainer extends RetrieveArrayContainer<List<Object>, SectionS
     }
 
     @Override
-    protected BiConsumer<List<Object>, SectionSerializable> add() {
+    protected BiConsumer<List<Object>, ConfigurationSection> add() {
         return List::add;
     }
 
@@ -168,7 +173,7 @@ public class YAMLContainer extends RetrieveArrayContainer<List<Object>, SectionS
     }
 
     @Override
-    protected Stream<String> getNestedKeys(SectionSerializable nested) {
+    protected Stream<String> getNestedKeys(ConfigurationSection nested) {
         return nested.getKeys(false).stream().filter(key -> !key.equalsIgnoreCase("=="));
     }
 
@@ -179,11 +184,11 @@ public class YAMLContainer extends RetrieveArrayContainer<List<Object>, SectionS
 
     @Override
     protected boolean isNested(Object object) {
-        return object instanceof SectionSerializable;
+        return object instanceof ConfigurationSection;
     }
 
     @Override
-    protected Object getObjectFromNested(SectionSerializable nested, String key) {
+    protected Object getObjectFromNested(ConfigurationSection nested, String key) {
         return nested.get(key);
     }
 

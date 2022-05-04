@@ -224,13 +224,17 @@ public abstract class ArrayContainer<H> extends StorageContainer {
         }
 
         List<T> list;
-        H handler = this.getRetrieveListHandler(path);
-        if(StorageContainer.getDecomposer(type) != null) {
-            list = this.handleRetrieveList(handler, type);
-        } else {
-            list = this.handleRetrieveList(handler, null);
+        H handler;
+        try {
+            handler = this.getRetrieveListHandler(path);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
-        this.cache(path, list);
+
+        list = this.handleRetrieveList(handler, StorageContainer.getDecomposer(type) != null ? type : null);
+
+        this.cacheRetrieve(path, list);
         return list;
     }
 
@@ -364,7 +368,9 @@ public abstract class ArrayContainer<H> extends StorageContainer {
     protected H handleList(Object data) {
         //Verify the list can be saved.
         this.getListStream(data).forEach(obj -> {
-            if (!this.isListSupported(obj.getClass()) && !isList(data)) {
+            if(obj == null) {
+                throw new IllegalArgumentException("List cannot be stored with null elements!");
+            } else if (!this.isListSupported(obj.getClass()) && !isList(data)) {
                 throw new IllegalArgumentException(obj.getClass() + " is not a supported storage class for a list within this container!");
             }
         });
@@ -422,5 +428,17 @@ public abstract class ArrayContainer<H> extends StorageContainer {
         return handler;
     }
 
+    @Override
+    public boolean isSupported(Class<?> clazz) {
+        return super.isSupported(clazz) || clazz.isArray() || Collection.class.isAssignableFrom(clazz);
+    }
 
+    /**
+     * Inner class used for recursively calling a {@link java.util.function.Function}.
+     *
+     * @param <T> The Type, generally should be a Function.
+     */
+    private static class Recursive<T> {
+        public T function;
+    }
 }

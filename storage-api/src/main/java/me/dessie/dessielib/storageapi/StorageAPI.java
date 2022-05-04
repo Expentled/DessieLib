@@ -128,7 +128,7 @@ public class StorageAPI {
                                     } else return null;
                                 } else if(argsArray[i] != null && argsArray[i] != paramArray[i] && !paramArray[i].isAssignableFrom(argsArray[i])) {
                                     if(annotation.throwError()) {
-                                        throw new IllegalStateException("Cannot use Annotations to add a Recomposer for " + clazz.getSimpleName() + ". Constructor and provided arguments do not match. (Make sure your fields are ordered in the same way as your constructor.)");
+                                        throw new IllegalStateException("Cannot use Annotations to add a Recomposer for " + clazz.getSimpleName() + ". Constructor and provided arguments do not match. Expected " + Arrays.toString(paramArray) + " but got " + Arrays.toString(argsArray));
                                     } else return null;
                                 }
                             }

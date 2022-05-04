@@ -10,6 +10,8 @@ import java.util.Map;
 public class StorageCache {
     private final Map<String, CachedObject> cache = new HashMap<>();
     private final int cacheDuration;
+    private final StorageContainer container;
+    private final FlushTask flushTask;
 
     //Temporarily stores all things that were changed and will need to be pushed to the data source.
     private final Map<String, Object> setCache = new HashMap<>();
@@ -18,10 +20,14 @@ public class StorageCache {
     private final List<String> removeCache = new ArrayList<>();
 
     /**
+     * @param container The StorageContainer that this cache attaches to.
      * @param cacheDuration How long to cache the object for. Set to -1 to cache forever
      */
-    public StorageCache(int cacheDuration) {
+    public StorageCache(StorageContainer container, int cacheDuration) {
+        this.container = container;
         this.cacheDuration = cacheDuration;
+
+        this.flushTask = new FlushTask(container);
     }
 
     /**
@@ -89,25 +95,15 @@ public class StorageCache {
      *
      * @see StorageContainer#set(String, Object) for adding objects into the Set cache.
      * @see StorageContainer#remove(String) for adding paths into the Remove cache.
-     *
-     * @param container The StorageContainer to flush the cache to.
      */
-    public void flush(StorageContainer container) {
-        if(this.getSetCache().isEmpty() && this.getRemoveCache().isEmpty()) return;
-
-        Map<String, Object> tempSetCache = new HashMap<>(this.getSetCache());
-        List<String> tempRemoveCache = new ArrayList<>(this.getRemoveCache());
-
-        for(String key : tempSetCache.keySet()) {
-            container.store(key, this.getSetCache().get(key));
+    public void flush() {
+        if(!this.getSetCache().isEmpty()) {
+            this.getContainer().storeAll(this.getSetCache());
         }
 
-        for(String path : tempRemoveCache) {
-            container.delete(path);
+        if(!this.getRemoveCache().isEmpty()) {
+            this.getContainer().deleteAll(this.getRemoveCache());
         }
-
-        this.getSetCache().clear();
-        this.getRemoveCache().clear();
     }
 
     /**
@@ -130,6 +126,24 @@ public class StorageCache {
             }
         }
         this.getCache().clear();
+    }
+
+    /**
+     * Returns the {@link StorageContainer} that this cache is caching for.
+     *
+     * @return The StorageContainer.
+     */
+    public StorageContainer getContainer() {
+        return container;
+    }
+
+    /**
+     * Returns the {@link FlushTask} that defines when this cache is flushed.
+     *
+     * @return The FlushTask.
+     */
+    public FlushTask getFlushTask() {
+        return this.flushTask;
     }
 
     /**

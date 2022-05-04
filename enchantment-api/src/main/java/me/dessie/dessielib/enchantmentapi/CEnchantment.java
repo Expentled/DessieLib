@@ -13,6 +13,9 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.enchantments.EnchantmentTarget;
+import org.bukkit.event.Event;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.*;
@@ -25,11 +28,12 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class CEnchantment extends Enchantment {
+public class CEnchantment extends Enchantment implements Listener {
 
     private static final List<CEnchantment> enchantments = new ArrayList<>();
 
@@ -112,6 +116,40 @@ public class CEnchantment extends Enchantment {
      */
     public boolean isRegistered() {
         return registered;
+    }
+
+    /**
+     * Adds an EventListener to this CEnchantment, that will callback your methods when the event is triggered and the predicate is met.
+     * Generally, your predicate will check if the item has this enchantment.
+     *
+     * @param type The Event class
+     * @param predicate The Predicate that should be met to fire your listener.
+     * @param consumer A consumer that accepts the event
+     * @return This CEnchantment
+     */
+    public <T extends Event> CEnchantment addEventListener(Class<T> type, BiPredicate<CEnchantment, T> predicate, Consumer<T> consumer) {
+        return this.addEventListener(type, predicate, consumer, EventPriority.NORMAL);
+    }
+
+    /**
+     * Adds an EventListener to this CEnchantment, that will callback your methods when the event is triggered and the predicate is met.
+     * Generally, your predicate will check if the item has this enchantment.
+     *
+     * @param type The Event class
+     * @param predicate The Predicate that should be met to fire your listener.
+     * @param consumer A consumer that accepts the event
+     * @param priority The Event's priority
+     * @return This CEnchantment
+     */
+    public <T extends Event> CEnchantment addEventListener(Class<T> type, BiPredicate<CEnchantment, T> predicate, Consumer<T> consumer, EventPriority priority) {
+        CEnchantmentAPI.getPlugin().getServer().getPluginManager().registerEvent(type, this, priority, (listener, event) -> {
+            if(event.getClass() != type) return;
+
+            if(predicate.test(this, (T) event)) {
+                consumer.accept((T) event);
+            }
+        }, CEnchantmentAPI.getPlugin());
+        return this;
     }
 
     public BiConsumer<EntityDamageByEntityEvent, CEventResult> getEntityAttack() { return entityAttack; }

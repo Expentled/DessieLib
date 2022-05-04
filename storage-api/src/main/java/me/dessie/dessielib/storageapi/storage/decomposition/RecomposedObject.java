@@ -165,9 +165,11 @@ public class RecomposedObject<T> {
         return this.getPathTypes().get(path);
     }
 
-    public void completeObject(String path, Object object) {
+    public void completeObject(String path, Object object) throws IllegalArgumentException {
         Objects.requireNonNull(path, "Path cannot be null!");
-        Objects.requireNonNull(this.getCompletedPath().get(path), "Path does not exist!");
+        if(this.getCompletedPath().get(path) == null) {
+            throw new IllegalArgumentException("The path " + path + " does not exist and cannot be completed!");
+        }
 
         this.getCompletedPath().get(path).complete(object);
     }

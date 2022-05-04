@@ -98,7 +98,9 @@ public class JSONContainer extends RetrieveArrayContainer<JsonArray, JsonObject>
             if(this.getElement(String.join(".", Arrays.copyOfRange(tree, 0, tree.length - 1)), true) instanceof JsonObject object) {
                 object.add(tree[tree.length - 1], this.getGson().toJsonTree(data));
             }
-        }).onComplete(this::write);
+        }).onComplete(() -> {
+            this.write();
+        });
     }
 
     @Override
@@ -212,7 +214,7 @@ public class JSONContainer extends RetrieveArrayContainer<JsonArray, JsonObject>
     @Override
     protected JsonArray getRetrieveListHandler(String path) {
         if(this.getElement(path, false) instanceof JsonArray array) return array;
-        return null;
+        return new JsonArray();
     }
 
     private Object retrieveCorrectly(JsonObject object, String key) {

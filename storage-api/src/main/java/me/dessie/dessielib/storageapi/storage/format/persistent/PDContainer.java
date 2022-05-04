@@ -20,7 +20,6 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Predicate;
 
 /**
  * An abstract {@link StorageContainer} that stores using the {@link PersistentDataContainer} from Spigot.
@@ -82,11 +81,6 @@ public abstract class PDContainer extends StorageContainer {
     @SuppressWarnings("unchecked")
     protected StoreHook storeHook() {
         return new StoreHook((path, data) -> {
-
-            int i = 65;
-
-            Predicate<Integer> predicate = ((i == 65) ? ((k) -> k < 63) : ((k) -> k > -1));
-
             NamespacedKey key = new NamespacedKey(StorageAPI.getPlugin(), path);
 
             PersistentDataContainer container = this.getHolder().getPersistentDataContainer();

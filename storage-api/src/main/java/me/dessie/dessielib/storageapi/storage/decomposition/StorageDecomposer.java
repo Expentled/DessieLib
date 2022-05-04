@@ -110,7 +110,7 @@ public class StorageDecomposer<T> {
 
                 //Cache the object once its returned.
                 future.thenAccept(obj -> {
-                    container.cache(composedPath, obj);
+                    container.cacheRetrieve(composedPath, obj);
                 });
             }
         }

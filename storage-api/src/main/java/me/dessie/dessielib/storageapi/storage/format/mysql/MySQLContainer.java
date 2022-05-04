@@ -575,8 +575,8 @@ public class MySQLContainer extends StorageContainer {
      */
     @Deprecated
     @Override
-    public void store(String path, Object data) {
-        super.store(path, data);
+    public CompletableFuture<Void> store(String path, Object data) {
+        return super.store(path, data);
     }
 
     /**
@@ -647,7 +647,7 @@ public class MySQLContainer extends StorageContainer {
      */
     @Deprecated
     @Override
-    public void delete(String path) {
-        super.delete(path);
+    public CompletableFuture<Void> delete(String path) {
+        return super.delete(path);
     }
 }
