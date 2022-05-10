@@ -64,6 +64,11 @@ public class Packeteer implements Listener {
      * @return All Players that are currently injected into Packeteer's Pipeline
      */
     public static List<UUID> getInjectedPlayers() {return injectedPlayers;}
+
+    /**
+     * Returns the {@link JavaPlugin} that registered Packeteer.
+     * @return The plugin that registered.
+     */
     public static JavaPlugin getPlugin() {return plugin;}
 
     /**

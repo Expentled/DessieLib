@@ -85,9 +85,9 @@ public class EntityFollowAnimation extends ParticleAnimator {
     @Override
     public void run() {
         Location location = this.getEntity().getLocation();
-        this.location.setX(location.getX() + this.getOffset().getX());
-        this.location.setY(location.getY() + this.getOffset().getY());
-        this.location.setZ(location.getZ() + this.getOffset().getZ());
+        this.getLocation().setX(location.getX() + this.getOffset().getX());
+        this.getLocation().setY(location.getY() + this.getOffset().getY());
+        this.getLocation().setZ(location.getZ() + this.getOffset().getZ());
         super.run();
     }
 }

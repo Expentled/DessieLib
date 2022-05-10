@@ -126,6 +126,7 @@ public class RecomposedObject<T> {
      * This method implicitly cast to the type you're trying to retrieve and may result in ClassCastExceptions.
      *
      * @param path The path to get.
+     * @param <M> The implicit type to cast the completed object to.
      * @return The completed Object once completed by the {@link RecomposedObject#addRecomposeKey(String, Class, Function)}.
      */
     @SuppressWarnings("unchecked")
@@ -165,6 +166,13 @@ public class RecomposedObject<T> {
         return this.getPathTypes().get(path);
     }
 
+    /**
+     * Completes an Object into the Recomposed map as it's been retrieved from the {@link StorageContainer}
+     *
+     * @param path The path to the retrieved object.
+     * @param object The object that has been retrieved.
+     * @throws IllegalArgumentException If the path is null
+     */
     public void completeObject(String path, Object object) throws IllegalArgumentException {
         Objects.requireNonNull(path, "Path cannot be null!");
         if(this.getCompletedPath().get(path) == null) {
@@ -174,6 +182,15 @@ public class RecomposedObject<T> {
         this.getCompletedPath().get(path).complete(object);
     }
 
+    /**
+     * Creates a RecomposedObject that has all the necessary maps filled for a specific {@link StorageDecomposer}.
+     *
+     * @param container The StorageContainer this RecomposedObject is for.
+     * @param decomposer The StorageDecomposer that should be used to fill in the RecomposedObject.
+     * @param <T> The class of the StorageDecomposer
+     *
+     * @return The RecomposedObject that has its recompose maps built for the provided type.
+     */
     public static <T> RecomposedObject<T> filled(StorageContainer container, StorageDecomposer<T> decomposer) {
         Objects.requireNonNull(container, "Cannot retrieve from null container!");
         Objects.requireNonNull(decomposer, "Cannot apply decomposition from null decomposer!");
@@ -186,6 +203,14 @@ public class RecomposedObject<T> {
         return recomposedObject;
     }
 
+    /**
+     * Creates a RecomposedObject that has all the necessary maps filled for a specific {@link StorageDecomposer}.
+     *
+     * @param container The StorageContainer this RecomposedObject is for.
+     * @param classType The type of class that should have it's StorageDecomposer information filled in.
+     * @param <T> The class of the StorageDecomposer
+     * @return The RecomposedObject that has its recompose maps built for the provided type.
+     */
     public static <T> RecomposedObject<T> filled(StorageContainer container, Class<T> classType) {
         Objects.requireNonNull(container, "Cannot retrieve from null container!");
         Objects.requireNonNull(classType, "Cannot apply decomposition from null class!");

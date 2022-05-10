@@ -78,7 +78,7 @@ public class LanguageAsset extends Asset {
                     }
 
                     assets.stream().findAny().ifPresent(asset -> {
-                        write(object.getObject(), new File(asset.getLangFolder() + "/" + lang + ".json"));
+                        write(object.build(), new File(asset.getLangFolder() + "/" + lang + ".json"));
                     });
                 }
             }

@@ -5,6 +5,9 @@ import org.bukkit.Material;
 import java.io.File;
 import java.util.Locale;
 
+/**
+ * Represents a Texture for a {@link BlockAsset} or an {@link ItemAsset}
+ */
 public class TextureAsset {
 
     private String key;
@@ -84,12 +87,24 @@ public class TextureAsset {
         this.textureFile = null;
     }
 
-    public String getKey() {
-        return key;
-    }
+    /**
+     * Returns the key for this asset
+     * @return The key
+     */
+    public String getKey() {return key;}
+
+    /**
+     * Returns the name of this asset
+     * @return The name
+     */
     public String getName() {
         return name;
     }
+
+    /**
+     * Returns the texture file for this asset
+     * @return The texture file
+     */
     public File getTextureFile() {
         return textureFile;
     }

@@ -7,6 +7,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Caches all data into paths that have been retrieved from {@link StorageContainer}s.
+ * 
+ * This cache will be checked first before attempting to retrieve data from a StorageContainer again.
+ * Data in this cache will expire, and can be changed by using {@link me.dessie.dessielib.storageapi.storage.settings.StorageSettings#setCacheDuration(int)}
+ */
 public class StorageCache {
     private final Map<String, CachedObject> cache = new HashMap<>();
     private final int cacheDuration;
@@ -45,6 +51,7 @@ public class StorageCache {
      *
      * @param path The path of the object.
      * @param obj The object to cache.
+     * @param cacheDuration How long, in seconds, an object should be kept in the cache for.
      */
     public void cache(String path, Object obj, int cacheDuration) {
         this.getCache().put(path, new CachedObject(this, obj, cacheDuration));

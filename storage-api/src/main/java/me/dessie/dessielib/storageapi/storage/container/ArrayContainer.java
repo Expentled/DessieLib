@@ -365,6 +365,19 @@ public abstract class ArrayContainer<H> extends StorageContainer {
         return Arrays.stream((Object[]) list);
     }
 
+    /**
+     * Handles the storing of a List into the container.
+     * The list must not contain any classes or objects that cannot be stored.
+     * e.g. They must be primitives or a have a {@link me.dessie.dessielib.storageapi.storage.decomposition.StorageDecomposer}.
+     *
+     * All objects will have {@link ArrayContainer#handleListObject()} called on them with the handle.
+     *
+     * @see ArrayContainer#getRetrieveListHandler(String)
+     * @see ArrayContainer#handleListObject()
+     *
+     * @param data The List to store, can be either an Array or a Collection.
+     * @return The handler that can be stored natively into the container.
+     */
     protected H handleList(Object data) {
         //Verify the list can be saved.
         this.getListStream(data).forEach(obj -> {

@@ -6,13 +6,16 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scoreboard.Team;
 
+/**
+ * Listen for players leaving the server to unregister their Scoreboard.
+ */
 public class ScoreboardListener implements Listener {
     void createListeners() {
         ScoreboardAPI.getPlugin().getServer().getPluginManager().registerEvents(this, ScoreboardAPI.getPlugin());
     }
 
     @EventHandler
-    public static void onLeave(PlayerQuitEvent event) {
+    private void onLeave(PlayerQuitEvent event) {
         ScoreboardAPI board = ScoreboardAPI.getBoard(event.getPlayer());
         if(board != null) {
             board.stopTitleAnimation();

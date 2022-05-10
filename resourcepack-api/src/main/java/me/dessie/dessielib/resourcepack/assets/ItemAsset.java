@@ -112,12 +112,12 @@ public class ItemAsset extends Asset {
 
                         //Generate the .json for the asset with the appropriate custom model id.
                         JsonObject object = new JsonObjectBuilder().add("parent", "minecraft:item/generated")
-                                .add("textures", new JsonObjectBuilder().add("layer0", "minecraft:item/" + materialName).getObject())
+                                .add("textures", new JsonObjectBuilder().add("layer0", "minecraft:item/" + materialName).build())
                                 .add("overrides", array
                                         .add(new JsonObjectBuilder().add("predicate", new JsonObjectBuilder()
-                                                        .add("custom_model_data", asset.getCustomModelId()).getObject())
-                                                .add("model", asset.getNamespace() + ":item/" + asset.getName().split("\\.png")[0]).getObject()).getArray())
-                                .getObject();
+                                                        .add("custom_model_data", asset.getCustomModelId()).build())
+                                                .add("model", asset.getNamespace() + ":item/" + asset.getName().split("\\.png")[0]).build()).build())
+                                .build();
                         //Save the JSON file.
                         write(object, assetFile);
                     }
@@ -140,7 +140,7 @@ public class ItemAsset extends Asset {
                         }
 
                         JsonObject object = new JsonObjectBuilder().add("parent", "minecraft:item/generated")
-                                .add("textures", textureBuilder.getObject()).getObject();
+                                .add("textures", textureBuilder.build()).build();
 
                         write(object, customModel);
                     } else {

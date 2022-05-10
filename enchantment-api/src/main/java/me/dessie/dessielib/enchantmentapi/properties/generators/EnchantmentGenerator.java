@@ -1,4 +1,4 @@
-package me.dessie.dessielib.enchantmentapi.utils;
+package me.dessie.dessielib.enchantmentapi.properties.generators;
 
 import me.dessie.dessielib.enchantmentapi.CEnchantment;
 import me.dessie.dessielib.enchantmentapi.properties.CEnchantProperties;
@@ -24,7 +24,7 @@ public class EnchantmentGenerator {
      * @param base The enchanting cost of the enchantment. (1 - 30)
      * @return The modified power for this enchant
      */
-    public static int getModifiedPower(ItemStack itemstack, int base) {
+    static int getModifiedPower(ItemStack itemstack, int base) {
         int enchantability = getEnchantability(itemstack);
         int range = random.nextInt((115 - 85) + 1) + 85; //Get a number between 85 and 115.
         double modifier = range/100.0; //Map to 0.85 and 1.15
@@ -32,7 +32,7 @@ public class EnchantmentGenerator {
         return (int) (modifier * (base + random.nextInt(enchantability / 4 + 1) + random.nextInt(enchantability / 4 + 1) + 1));
     }
 
-    public static Map<Enchantment, Integer> getPossibleEnchantments(ItemStack item, Enchantment clickedEnchantment, int modifiedPower) {
+    static Map<Enchantment, Integer> getPossibleEnchantments(ItemStack item, Enchantment clickedEnchantment, int modifiedPower) {
         Map<Enchantment, Integer> enchantments = new HashMap<>();
 
         //Add all the possible Vanilla enchantments.
@@ -78,7 +78,7 @@ public class EnchantmentGenerator {
         return enchantments;
     }
 
-    private static Enchantment chooseEnchantment(List<Enchantment> possibleEnchantments) {
+    static Enchantment chooseEnchantment(List<Enchantment> possibleEnchantments) {
         int totalWeight = 0;
 
         for(Enchantment possible : possibleEnchantments) {
@@ -108,7 +108,7 @@ public class EnchantmentGenerator {
         return null;
     }
 
-    public static List<Enchantment> chooseEnchantments(List<Enchantment> possible, Enchantment clickedEnchantment, int modifiedPower) {
+    static List<Enchantment> chooseEnchantments(List<Enchantment> possible, Enchantment clickedEnchantment, int modifiedPower) {
         List<Enchantment> chosen = new ArrayList<>(Arrays.asList(clickedEnchantment));
 
         possible.removeIf(possibleEnch -> chosen.stream().anyMatch(chosenEnch -> CEnchantment.conflictsWith(possibleEnch, chosenEnch)));

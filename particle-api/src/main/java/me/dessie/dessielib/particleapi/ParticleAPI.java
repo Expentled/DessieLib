@@ -2,6 +2,9 @@ package me.dessie.dessielib.particleapi;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
+/**
+ * Main class for registering ParticleAPI.
+ */
 public class ParticleAPI {
     private static JavaPlugin plugin;
     private static boolean registered;

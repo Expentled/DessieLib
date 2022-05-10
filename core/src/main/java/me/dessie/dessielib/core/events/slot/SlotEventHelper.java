@@ -59,6 +59,10 @@ public class SlotEventHelper implements Listener {
     //Entries are removed 1 tick after they're added.
     private static final List<UUID> didInventoryDrop = new ArrayList<>();
 
+    /**
+     * Registers the listeners for {@link SlotUpdateEvent}.
+     * @param yourPlugin Your plugin
+     */
     public static void register(JavaPlugin yourPlugin) {
         if(isRegistered()) {
             throw new IllegalStateException("Cannot register SlotUpdateEvent in " + yourPlugin.getName() + ". Already registered by " + getPlugin().getName());
@@ -249,7 +253,97 @@ public class SlotEventHelper implements Listener {
     }
 
     /**
+     * Attempts to find an armor slot index for the provided {@link ItemStack}.
+     * If the item can be placed in that armor slot, then the slot number is returned.
+     *
+     * If the ItemStack does not fit into any slot, -1 is returned.
+     *
+     * Helmets, Pumpkins, Skulls return 39
+     * Chesplates and Elytra return 38
+     * Leggings return 37
+     * Boots return 36
+     *
+     * @param item The item to find the appropriate armor slot for
+     * @return The slot that the item fits in, or -1 if no slot fits.
+     */
+    public static int getSlotFromArmorPiece(ItemStack item) {
+        return getSlotFromArmorPiece(item.getType());
+    }
+
+    /**
+     * Attempts to find an armor slot index for the provided {@link Material}.
+     * If the material can be placed in that armor slot, then the slot number is returned.
+     *
+     * If the Material does not fit into any slot, -1 is returned.
+     *
+     * Helmets, Pumpkins, Skulls return 39
+     * Chesplates and Elytra return 38
+     * Leggings return 37
+     * Boots return 36
+     *
+     * @param material The item to find the appropriate armor slot for
+     * @return The slot that the material fits in, or -1 if no slot fits.
+     */
+    public static int getSlotFromArmorPiece(Material material) {
+        if((material.name().contains("HELMET")
+                || material.name().contains("SKULL")
+                || material == Material.CARVED_PUMPKIN)) {
+            return 39;
+        } else if((material.name().contains("CHESTPLATE")
+                || material == Material.ELYTRA)) {
+            return 38;
+        } else if(material.name().contains("LEGGINGS")) {
+            return 37;
+        } else if(material.name().contains("BOOTS")) {
+            return 36;
+        }
+
+        return -1;
+    }
+
+    /**
+     * @param player The player who clicked
+     * @param block The clicked block
+     * @return if a block allows armor to be equipped when right-clicking it
+     */
+    public static boolean isInteractable(Player player, Block block) {
+        Material material = block.getType();
+        if(material.isInteractable()) {
+            String name = material.name();
+
+            if(name.contains("FENCE") || name.contains("STAIRS")) {
+                return false;
+            }
+
+            if(material == Material.TNT || material == Material.PUMPKIN) return false;
+            if(material == Material.JUKEBOX) {
+                return ((Jukebox) block.getState()).isPlaying();
+            } else if(material == Material.CAKE) {
+                return player.getFoodLevel() != 20;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns if a provided ItemStack is null or has a {@link Material} of {@link Material#AIR}.
+     *
+     * Spigot is sometimes inconsistent when it returns an empty ItemStack or a null one, so this method should
+     * easily cover either case, whichever happens to occur.
+     *
+     * @param item The {@link ItemStack} to check.
+     * @return If the ItemStack is null or has a Material of AIR.
+     */
+    public static boolean isNullOrAir(ItemStack item) {
+        return item == null || item.getType() == Material.AIR;
+    }
+
+    /**
      * Compares an inventory at two different states and fires the proper SlotEvents.
+     *
      * @param player The Player
      * @param oldInventory The first Inventory state
      * @param newInventory The second Inventory state
@@ -331,63 +425,8 @@ public class SlotEventHelper implements Listener {
         return currentAmount;
     }
 
-    public static int getSlotFromArmorPiece(ItemStack item) {
-        return getSlotFromArmorPiece(item.getType());
-    }
-
-    public static int getSlotFromArmorPiece(Material material) {
-        if((material.name().contains("HELMET")
-                || material.name().contains("SKULL")
-                || material == Material.CARVED_PUMPKIN)) {
-            return 39;
-        } else if((material.name().contains("CHESTPLATE") 
-                || material == Material.ELYTRA)) {
-            return 38;
-        } else if(material.name().contains("LEGGINGS")) {
-            return 37;
-        } else if(material.name().contains("BOOTS")) {
-            return 36;
-        }
-        
-        return -1;
-    }
-
-    /**
-     * @param player The player who clicked
-     * @param block The clicked block
-     * @return if a block allows armor to be equipped when right clicking it
-     */
-    public static boolean isInteractable(Player player, Block block) {
-        Material material = block.getType();
-        if(material.isInteractable()) {
-            String name = material.name();
-
-            if(name.contains("FENCE") || name.contains("STAIRS")) {
-                return false;
-            }
-
-            if(material == Material.TNT || material == Material.PUMPKIN) return false;
-            if(material == Material.JUKEBOX) {
-                return ((Jukebox) block.getState()).isPlaying();
-            } else if(material == Material.CAKE) {
-                return player.getFoodLevel() != 20;
-            }
-
-            return true;
-        }
-
-        return false;
-    }
-
-    public static boolean isNullOrAir(ItemStack item) {
-        return item == null || item.getType() == Material.AIR;
-    }
-
-    public static JavaPlugin getPlugin() {
+    private static boolean isRegistered() { return registered; }
+    private static JavaPlugin getPlugin() {
         return plugin;
-    }
-
-    public static boolean isRegistered() {
-        return registered;
     }
 }

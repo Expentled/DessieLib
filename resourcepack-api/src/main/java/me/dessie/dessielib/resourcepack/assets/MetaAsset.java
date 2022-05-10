@@ -74,7 +74,7 @@ public class MetaAsset extends Asset {
 
                 JsonObject object = new JsonObjectBuilder().add("pack", new JsonObjectBuilder()
                         .add("pack_format", asset.getPackFormat())
-                        .add("description", asset.getDescription()).getObject()).getObject();
+                        .add("description", asset.getDescription()).build()).build();
 
                 write(object, asset.getMcmetaFile());
             }

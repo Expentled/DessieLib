@@ -22,6 +22,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+/**
+ * Abstraction class for StorageAPI.
+ * Provides tons of generic methods/code that should be able to be applied globally to any storage implementation.
+ *
+ * This class will automatically use the cache, and limit the flush of the extending containers,
+ * as well as provide store, delete, and retrieve methods.
+ */
 public abstract class StorageContainer {
 
     private static final List<StorageDecomposer<?>> storageDecomposers = new ArrayList<>();
@@ -668,6 +675,7 @@ public abstract class StorageContainer {
      * Returns a {@link StorageDecomposer} from the class instance.
      *
      * @param clazz The class to get the decomposer for.
+     * @param <T> The Class type to get the decomposer for.
      * @return The registered StorageDecomposer for the provided class, or null if it doesn't exist.
      */
     @SuppressWarnings("unchecked")

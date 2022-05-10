@@ -11,6 +11,13 @@ import org.bukkit.inventory.ItemStack;
 
 import javax.annotation.Nullable;
 
+/**
+ * Fires when an Inventory slot has been detected to be changed.
+ *
+ * Note: All changes may not be caught, see {@link UpdateType} for ways this event can fire.
+ *
+ * @see UpdateType
+ */
 public class SlotUpdateEvent extends PlayerEvent implements Cancellable {
     private static final HandlerList HANDLERS = new HandlerList();
     private boolean cancelled;
@@ -27,6 +34,32 @@ public class SlotUpdateEvent extends PlayerEvent implements Cancellable {
     private Inventory newInventory;
     private Inventory oldInventory;
 
+    /**
+     * Creates a new SlotUpdateEvent
+     *
+     * @param who The Player
+     * @param inventory The Inventory that was updated
+     * @param slot The slot that was updated
+     * @param newItem The new ItemStack in that slot
+     * @param oldItem The old ItemStack that was in the slot
+     * @param updateType The update type of this event
+     */
+    public SlotUpdateEvent(Player who, Inventory inventory, int slot, ItemStack newItem, ItemStack oldItem, UpdateType updateType) {
+        this(who, inventory, slot, newItem, oldItem, updateType, null, null);
+    }
+
+    /**
+     * Creates a new SlotUpdateEvent
+     *
+     * @param who The Player
+     * @param inventory The Inventory that was updated
+     * @param slot The slot that was updated
+     * @param newItem The new ItemStack in that slot
+     * @param oldItem The old ItemStack that was in the slot
+     * @param updateType The update type of this event
+     * @param newInv The updated Inventory when the UpdateType is {@link UpdateType#INVENTORY_INTERACT}
+     * @param oldInv The old Inventory when the UpdateType is {@link UpdateType#INVENTORY_INTERACT}
+     */
     public SlotUpdateEvent(Player who, Inventory inventory, int slot, ItemStack newItem, ItemStack oldItem, UpdateType updateType, Inventory newInv, Inventory oldInv) {
         super(who);
 
@@ -39,8 +72,21 @@ public class SlotUpdateEvent extends PlayerEvent implements Cancellable {
         this.oldInventory = oldInv;
     }
 
-    public SlotUpdateEvent(Player who, Inventory inventory, int slot, ItemStack newItem, ItemStack oldItem, UpdateType updateType) {
-        this(who, inventory, slot, newItem, oldItem, updateType, null, null);
+    /**
+     * Fires a SlotUpdateEvent
+     *
+     * @param who The Player
+     * @param inventory The Inventory that was updated
+     * @param slot The slot that was updated
+     * @param newItem The new ItemStack in that slot
+     * @param oldItem The old ItemStack that was in the slot
+     * @param updateType The update type of this event
+     * @return The SlotUpdateEvent instance
+     */
+    public static SlotUpdateEvent attemptFire(Player who, Inventory inventory, int slot, ItemStack newItem, ItemStack oldItem, UpdateType updateType) {
+        SlotUpdateEvent event = new SlotUpdateEvent(who, inventory, slot, newItem, oldItem, updateType);
+        Bukkit.getPluginManager().callEvent(event);
+        return event;
     }
 
     /**
@@ -58,23 +104,6 @@ public class SlotUpdateEvent extends PlayerEvent implements Cancellable {
      */
     public static SlotUpdateEvent attemptFire(Player who, Inventory inventory, int slot, ItemStack newItem, ItemStack oldItem, UpdateType updateType, Inventory newInv, Inventory oldInv) {
         SlotUpdateEvent event = new SlotUpdateEvent(who, inventory, slot, newItem, oldItem, updateType, newInv, oldInv);
-        Bukkit.getPluginManager().callEvent(event);
-        return event;
-    }
-
-    /**
-     * Fires a SlotUpdateEvent
-     *
-     * @param who The Player
-     * @param inventory The Inventory that was updated
-     * @param slot The slot that was updated
-     * @param newItem The new ItemStack in that slot
-     * @param oldItem The old ItemStack that was in the slot
-     * @param updateType The update type of this event
-     * @return The SlotUpdateEvent instance
-     */
-    public static SlotUpdateEvent attemptFire(Player who, Inventory inventory, int slot, ItemStack newItem, ItemStack oldItem, UpdateType updateType) {
-        SlotUpdateEvent event = new SlotUpdateEvent(who, inventory, slot, newItem, oldItem, updateType);
         Bukkit.getPluginManager().callEvent(event);
         return event;
     }
@@ -166,10 +195,6 @@ public class SlotUpdateEvent extends PlayerEvent implements Cancellable {
         return HANDLERS;
     }
 
-    public static HandlerList getHandlerList() {
-        return HANDLERS;
-    }
-
     @Override
     public boolean isCancelled() {
         return cancelled;
@@ -178,5 +203,13 @@ public class SlotUpdateEvent extends PlayerEvent implements Cancellable {
     @Override
     public void setCancelled(boolean b) {
         this.cancelled = b;
+    }
+
+    /**
+     * Internal Spigot method required for custom events.
+     * @return The Handler list
+     */
+    public static HandlerList getHandlerList() {
+        return HANDLERS;
     }
 }

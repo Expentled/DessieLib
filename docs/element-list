@@ -10,6 +10,7 @@ me.dessie.dessielib.enchantmentapi
 me.dessie.dessielib.enchantmentapi.activator
 me.dessie.dessielib.enchantmentapi.listener
 me.dessie.dessielib.enchantmentapi.properties
+me.dessie.dessielib.enchantmentapi.properties.generators
 me.dessie.dessielib.enchantmentapi.utils
 me.dessie.dessielib.inventoryapi
 me.dessie.dessielib.packeteer
@@ -18,6 +19,7 @@ me.dessie.dessielib.particleapi.animation
 me.dessie.dessielib.particleapi.collison
 me.dessie.dessielib.particleapi.shapes
 me.dessie.dessielib.particleapi.transform
+me.dessie.dessielib.particleapi.transform.orientation
 me.dessie.dessielib.particleapi.transform.transformations
 me.dessie.dessielib.particleapi.wrapper
 me.dessie.dessielib.resourcepack

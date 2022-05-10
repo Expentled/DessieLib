@@ -4,6 +4,11 @@ import me.dessie.dessielib.storageapi.StorageAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.scheduler.BukkitTask;
 
+/**
+ * Represents an object that has been cached from a StorageContainer
+ *
+ * This object will only be cached for a certain amount of time before it automatically expires itself.
+ */
 public class CachedObject {
 
     private final StorageCache cache;

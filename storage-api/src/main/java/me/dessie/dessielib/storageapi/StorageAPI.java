@@ -14,6 +14,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
+/**
+ * Main class for registering StorageAPI.
+ */
 public class StorageAPI {
 
     private static JavaPlugin plugin;
@@ -146,6 +149,13 @@ public class StorageAPI {
         }
     }
 
+    /**
+     * Returns the map of primitive classes to their respected Wrapped classes
+     *
+     * E.g. int -> Integer
+     *
+     * @return The map for primitives to wrappers.
+     */
     public static Map<Class<?>, Class<?>> getWrappers() {
         return wrappers;
     }

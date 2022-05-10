@@ -3,6 +3,10 @@ package me.dessie.dessielib.particleapi.shapes;
 import me.dessie.dessielib.particleapi.animation.ParticleAnimator;
 import me.dessie.dessielib.particleapi.collison.ParticleCollider;
 import me.dessie.dessielib.particleapi.transform.ParticleTransform;
+import me.dessie.dessielib.particleapi.transform.TransformType;
+import me.dessie.dessielib.particleapi.transform.orientation.Axis;
+import me.dessie.dessielib.particleapi.transform.orientation.Orientation;
+import me.dessie.dessielib.particleapi.transform.transformations.ParticleRotate;
 import me.dessie.dessielib.particleapi.wrapper.ParticleData;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -14,6 +18,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.BiFunction;
 
+/**
+ * Defines a shape of {@link Particle} that can be rendered into the {@link org.bukkit.World} or for a specific {@link Player}.
+ */
 public class ShapedParticle {
     private Particle particle;
     private Object particleOptions;
@@ -127,7 +134,7 @@ public class ShapedParticle {
         Objects.requireNonNull(animator, "Cannot use a null animator!");
 
         this.animator = animator;
-        this.getAnimator().particle = this;
+        this.getAnimator().setParticle(this);
         return this;
     }
 
@@ -176,6 +183,27 @@ public class ShapedParticle {
     public ShapedParticle addCollider(ParticleCollider<?> collider) {
         Objects.requireNonNull(collider, "Cannot add null collider!");
         this.getColliders().add(collider);
+        return this;
+    }
+
+    /**
+     * Applies any number of {@link Orientation}s to the particle. This will apply the necessary {@link ParticleRotate}
+     * to orientate the particle with your specified angle on the axis.
+     *
+     * @param orientations The orientations to apply
+     * @return The ShapedParticle instance.
+     */
+    public ShapedParticle addOrientation(Orientation... orientations) {
+        for(Orientation orientation : orientations) {
+            this.addTransform(new ParticleRotate(TransformType.STATIC, 1, ((location, step) -> {
+                Axis axis = orientation.getAxis();
+                return new Vector(
+                        axis == Axis.X ? orientation.getRotation() : 0,
+                        axis == Axis.Y ? orientation.getRotation() : 0,
+                        axis == Axis.Z ? orientation.getRotation() : 0);
+            })));
+        }
+
         return this;
     }
 

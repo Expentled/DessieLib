@@ -1,4 +1,4 @@
-package me.dessie.dessielib.enchantmentapi.utils;
+package me.dessie.dessielib.enchantmentapi.properties.generators;
 
 import me.dessie.dessielib.enchantmentapi.CEnchantment;
 import org.bukkit.GameMode;
@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
  */
 public class AnvilGenerator {
 
-    public static void removeConflictingVanilla(ItemStack target, ItemStack sacrifice, ItemStack result) {
+    static void removeConflictingVanilla(ItemStack target, ItemStack sacrifice, ItemStack result) {
         //Gets the conflicting vanilla enchantments
         Set<Enchantment> badVanillaEnchantments = getConflictingVanilla(target, sacrifice);
 
@@ -25,7 +25,7 @@ public class AnvilGenerator {
         }
     }
 
-    public static int doAnvilEnchant(Player player, Set<CEnchantment> enchantments, ItemStack target, ItemStack sacrifice, ItemStack result) {
+    static int doAnvilEnchant(Player player, Set<CEnchantment> enchantments, ItemStack target, ItemStack sacrifice, ItemStack result) {
         int cost = 0;
         for(CEnchantment enchantment : enchantments) {
             int level = getNewLevel(enchantment, target, sacrifice);
@@ -37,7 +37,7 @@ public class AnvilGenerator {
         return cost;
     }
 
-    public static Set<Enchantment> getConflictingVanilla(ItemStack target, ItemStack sacrifice) {
+    static Set<Enchantment> getConflictingVanilla(ItemStack target, ItemStack sacrifice) {
         Set<Enchantment> enchantments = new HashSet<>();
 
         for(CEnchantment enchantment : CEnchantment.getEnchantments(target)) {
@@ -51,7 +51,7 @@ public class AnvilGenerator {
         return enchantments;
     }
 
-    public static Set<CEnchantment> getEnchantmentsToAdd(Player player, ItemStack target, ItemStack sacrifice) {
+    static Set<CEnchantment> getEnchantmentsToAdd(Player player, ItemStack target, ItemStack sacrifice) {
         Set<CEnchantment> enchantments = new HashSet<>();
 
         enchantments.addAll(CEnchantment.getEnchantments(target));
@@ -69,7 +69,7 @@ public class AnvilGenerator {
         return enchantments;
     }
 
-    public static int getNewLevel(CEnchantment enchantment, ItemStack target, ItemStack sacrifice) {
+    static int getNewLevel(CEnchantment enchantment, ItemStack target, ItemStack sacrifice) {
         int level = CEnchantment.getLevel(target, enchantment);
         int sacrificeLevel = CEnchantment.getLevel(sacrifice, enchantment);
 

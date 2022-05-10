@@ -4,6 +4,20 @@ import me.dessie.dessielib.storageapi.storage.cache.StorageCache;
 import me.dessie.dessielib.storageapi.storage.container.StorageContainer;
 import me.dessie.dessielib.storageapi.storage.container.hooks.StorageHook;
 
+/**
+ * Defines the settings for a {@link StorageContainer}
+ *
+ * The following are default settings, and are applied automatically if a Container is created without modifying the settings:
+ *   - Use Cache: true
+ *   - Cache on Retrieve: true
+ *   - Cache on Store: true
+ *   - Cache Duration: 1 minute
+ *   - Flush Rate: 5 minutes
+ *   - Flush Cooldown: 5 seconds
+ *
+ * Some containers will change these default settings.
+ *
+ */
 public class StorageSettings {
 
     private int cacheDuration;
@@ -17,14 +31,6 @@ public class StorageSettings {
 
     /**
      * Creates a settings instance for a {@link StorageContainer} with default settings.
-     *
-     * Default settings:
-     *   - Use Cache: true
-     *   - Cache on Retrieve: true
-     *   - Cache on Store: true
-     *   - Cache Duration: 1 minute
-     *   - Flush Rate: 5 minutes
-     *   - Flush Cooldown: 5 seconds
      *
      */
     public StorageSettings() {

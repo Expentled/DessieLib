@@ -12,6 +12,9 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+/**
+ * Utility class for obtaining all {@link Class}es within a Plugin's JAR file.
+ */
 public class ClassUtil {
 
     /**

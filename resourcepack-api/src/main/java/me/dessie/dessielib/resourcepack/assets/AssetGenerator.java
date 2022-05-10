@@ -6,6 +6,16 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * Defines the implementation for generating an asset for the resource pack.
+ *
+ * This class involves 2 phases of generation, one for initializing all the files (for example, creating necessary folders)
+ * and a phase for generating necessary files for the asset. (such as a .json file).
+ *
+ * You can create and generate any file that is needed for your asset to properly function.
+ *
+ * @see Asset
+ */
 public abstract class AssetGenerator {
 
     /**

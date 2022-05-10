@@ -8,6 +8,9 @@ import java.nio.file.attribute.FileTime;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+/**
+ * Utility for zipping a source folder into a .zip file.
+ */
 public class Zipper {
 
     /**

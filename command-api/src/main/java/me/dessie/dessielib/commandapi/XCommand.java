@@ -16,6 +16,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Main registering class for XCommand.
+ */
 public abstract class XCommand implements TabExecutor {
 
     private static final List<XCommand> commands = new ArrayList<>();

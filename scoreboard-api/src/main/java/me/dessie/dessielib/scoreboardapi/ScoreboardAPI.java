@@ -13,6 +13,9 @@ import org.bukkit.scoreboard.Team;
 import javax.annotation.Nullable;
 import java.util.*;
 
+/**
+ * Main class for registering the ScoreboardAPI, and managing individual Scoreboards for players.
+ */
 public class ScoreboardAPI {
 
     static Map<Player, ScoreboardAPI> boards = new HashMap<>();
@@ -384,10 +387,20 @@ public class ScoreboardAPI {
         new ScoreboardListener().createListeners();
     }
 
+    /**
+     * Returns the plugin instance that registered the API.
+     *
+     * @return The Plugin that registered ScoreboardAPI
+     */
     public static JavaPlugin getPlugin() {
         return plugin;
     }
 
+    /**
+     * Returns if ScoreboardAPI has been registered.
+     *
+     * @return If the API has been registered.
+     */
     public static boolean isRegistered() {
         return registered;
     }

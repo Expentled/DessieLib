@@ -5,6 +5,15 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Annotates a constructor as a default way to recompose a {@link me.dessie.dessielib.storageapi.storage.decomposition.StorageDecomposer}
+ * when it's being retrieved from a {@link me.dessie.dessielib.storageapi.storage.container.StorageContainer}
+ *
+ * This constructor must have it's parameters in the same order as all {@link Stored} fields are defined in the class.
+ * Additionally, the amount of parameters in this constructor should match the amount of {@link Stored} annotated fields.
+ *
+ * @see Stored
+ */
 @Target(ElementType.CONSTRUCTOR)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RecomposeConstructor {

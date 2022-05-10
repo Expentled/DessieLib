@@ -4,6 +4,9 @@ import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.craftbukkit.v1_18_R2.block.CraftBlock;
 
+/**
+ * Utility class for playing sounds dynamically
+ */
 public class SoundUtil {
 
     /**

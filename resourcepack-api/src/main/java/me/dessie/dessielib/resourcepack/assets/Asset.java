@@ -10,6 +10,12 @@ import java.io.IOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Abstraction class used for generic information of all Assets.
+ * Also includes basic folder information so assets can easily obtain where they would want to place files.
+ *
+ * All Assets will require a name for identification
+ */
 public abstract class Asset {
     private final String name;
     private final File resourcePackFolder;

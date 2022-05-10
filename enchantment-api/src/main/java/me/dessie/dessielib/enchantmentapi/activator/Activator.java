@@ -1,5 +1,8 @@
 package me.dessie.dessielib.enchantmentapi.activator;
 
+/**
+ * Handles what requirements must be met when activating an Enchantment.
+ */
 public enum Activator {
     /**
      * Activates if any of the Activators are met.

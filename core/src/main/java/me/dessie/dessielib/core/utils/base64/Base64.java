@@ -11,6 +11,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
+/**
+ * Utility class for converting {@link ItemStack}s or {@link Inventory}s to and from a Base64 String.
+ */
 public class Base64 {
 
     /**

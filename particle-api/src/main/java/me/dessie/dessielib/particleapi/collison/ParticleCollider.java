@@ -1,5 +1,6 @@
 package me.dessie.dessielib.particleapi.collison;
 
+import me.dessie.dessielib.particleapi.animation.ParticleAnimator;
 import me.dessie.dessielib.particleapi.shapes.ShapedParticle;
 import org.bukkit.World;
 import org.bukkit.util.Vector;
@@ -117,6 +118,14 @@ public abstract class ParticleCollider<T> {
      */
     protected abstract void attemptCollide(ShapedParticle particle, World world, List<Vector> points);
 
+    /**
+     * Marks an object as collided with.
+     * This should always be called when the object has been collidied with in your {@link ParticleCollider#attemptCollide(ShapedParticle, World, List)}
+     *
+     * The delay and frame collision will be applied to this object, to properly prevent it from being collided with improperly.
+     *
+     * @param object The object to mark as a collided with
+     */
     protected void add(T object) {
         delays.put(object, this.getDelay());
 
@@ -126,10 +135,25 @@ public abstract class ParticleCollider<T> {
         }
     }
 
+    /**
+     * Returns if a provided object is able to be collided with.
+     * An object must not have an active delay, and if MultiCollide is off, it must not have been collided with this frame.
+     *
+     * @param object The object to check collision for.
+     * @return If the Object is valid for a collision.
+     */
     protected boolean canCollide(T object) {
         return !delays.containsKey(object) && (!this.isMultiCollide() && !frameCollisions.contains(object));
     }
 
+    /**
+     * Decrements the delay for the ShapedParticle.
+     *
+     * This should always been called in your {@link ParticleCollider#startCollide(ShapedParticle, World, List)} method, if overrode.
+     * Generally, before any {@link ParticleCollider#canCollide(Object)} calls have been made.
+     *
+     * @param particle The ShapedParticle to calculate for.
+     */
     protected void doDelayCalculate(ShapedParticle particle) {
         //Decrement the Collision Delay for all entities by the Particle's Animation Speed.
         for(T object : delays.keySet()) {
@@ -140,6 +164,17 @@ public abstract class ParticleCollider<T> {
         delays.entrySet().removeIf(entry -> entry.getValue() <= 0);
     }
 
+    /**
+     * Starts a collision for a Particle.
+     * This will be called on every animation from of a ShapedParticle.
+     *
+     * @see me.dessie.dessielib.particleapi.animation.ParticleAnimator
+     * @see ParticleAnimator#getAnimationSpeed() To change how often collisions occur.
+     *
+     * @param particle The ShapedParticle to check collisions for
+     * @param world The World to check collisions in
+     * @param points The points on the ShapedParticle to check collisions for.
+     */
     public void startCollide(ShapedParticle particle, World world, List<Vector> points) {
         this.doDelayCalculate(particle);
         this.frameCollisions = new ArrayList<>();

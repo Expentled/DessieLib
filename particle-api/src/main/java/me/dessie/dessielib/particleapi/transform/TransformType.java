@@ -1,5 +1,8 @@
 package me.dessie.dessielib.particleapi.transform;
 
+/**
+ * Defines how a ParticleTransformation should behave over time
+ */
 public enum TransformType {
     /**
      * The step count for the transformation will restart at 0 once the frame cap is reached.

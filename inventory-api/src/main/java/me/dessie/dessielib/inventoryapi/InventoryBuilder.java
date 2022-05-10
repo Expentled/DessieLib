@@ -11,6 +11,9 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
+/**
+ * Builder for creating Inventories with InventoryAPI.
+ */
 public class InventoryBuilder {
     private static HashMap<Player, InventoryBuilder> inventories = new HashMap<>();
 
@@ -153,6 +156,7 @@ public class InventoryBuilder {
 
     /**
      * Forcefully closes the Inventory.
+     *
      * @param player The player to close
      * @return The InventoryBuilder
      */
@@ -815,8 +819,12 @@ public class InventoryBuilder {
         }
     }
 
+    /**
+     * Returns a map all players that have opened InventoryBuilders
+     *
+     * @return A Player -> InventoryBuilder map of all opened InventoryBuilders.
+     */
     public static Map<Player, InventoryBuilder> getInventories() {
         return inventories;
     }
-
 }

@@ -93,9 +93,20 @@ public abstract class RetrieveArrayContainer<H, N> extends ArrayContainer<H> {
      */
     protected abstract Object getPrimitive(Object object);
 
+    /**
+     * Creates a RetrieveArrayContainer with a default {@link StorageSettings}.
+     *
+     * @see StorageSettings#StorageSettings()
+     */
     public RetrieveArrayContainer() {
         super();
     }
+
+    /**
+     * Creates an RetrieveArrayContainer with the specified {@link StorageSettings}.
+     *
+     * @param settings The StorageSettings for the container.
+     */
     public RetrieveArrayContainer(StorageSettings settings) {
         super(settings);
     }

@@ -5,6 +5,9 @@ import net.md_5.bungee.api.ChatColor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Utility class for adding color to Minecraft messages.
+ */
 public class Colors {
     private static final Pattern colorPattern = Pattern.compile("#[A-Fa-f0-9]{6}");
 

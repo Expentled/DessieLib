@@ -55,7 +55,7 @@ DessieLib provides many features that are cumbersome in CraftBukkit and Spigot, 
 - `ScoreboardAPI` used to create organized tablists & scoreboards without the hassle of dealing with teams.
 - `ParticleAPI` can easily create complex particle patterns or shapes, and animate them dynamically.
 - `EnchantmentAPI` can manage fully customizable Enchantments
-- `ResourcepackAPI` Allows you to generate an entire resource pack by just dropping in files.
+- `ResourcePackAPI` Allows you to generate an entire resource pack by just dropping in files.
 - `Packeteer` Allows you to listen for incoming and outgoing packets, and fire events for these packets.
 - `CommandAPI` can automatically register your commands without needing to write them in the plugin.yml
 - `StorageAPI` easily stores, retrieves, and deletes data from different types of data structures.

@@ -283,13 +283,13 @@ public class BitmapUnicodeAsset extends Asset {
                             .add("file", texture)
                             .add("ascent", filtered.get(texture).get(0).getAscent())
                             .add("height", filtered.get(texture).get(0).getHeight())
-                            .add("chars", chars.getArray()).getObject());
+                            .add("chars", chars.build()).build());
                 }
 
-                object.add("providers", array.getArray());
+                object.add("providers", array.build());
 
                 if(assets.size() > 0) {
-                    writeWithUnicodeSupport(object.getObject(), new File(assets.get(0).getMinecraftUnicodeFontFolder() + "/default.json"));
+                    writeWithUnicodeSupport(object.build(), new File(assets.get(0).getMinecraftUnicodeFontFolder() + "/default.json"));
                 }
             }
         });
