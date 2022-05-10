@@ -1,20 +1,16 @@
-package me.dessie.dessielib.enchantmentapi.properties;
+package me.dessie.dessielib.enchantmentapi.properties.generators;
 
 import me.dessie.dessielib.core.events.slot.SlotEventHelper;
 import me.dessie.dessielib.core.events.slot.SlotUpdateEvent;
 import me.dessie.dessielib.core.events.slot.UpdateType;
 import me.dessie.dessielib.enchantmentapi.CEnchantment;
 import me.dessie.dessielib.enchantmentapi.CEnchantmentAPI;
-import me.dessie.dessielib.enchantmentapi.utils.AnvilGenerator;
-import me.dessie.dessielib.enchantmentapi.utils.EnchantmentGenerator;
-import me.dessie.dessielib.enchantmentapi.utils.GrindstoneGenerator;
-import me.dessie.dessielib.enchantmentapi.utils.VillagerGenerator;
 import net.minecraft.core.Registry;
 import net.minecraft.world.inventory.EnchantmentMenu;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_18_R1.inventory.CraftInventoryView;
-import org.bukkit.craftbukkit.v1_18_R1.util.CraftNamespacedKey;
+import org.bukkit.craftbukkit.v1_18_R2.inventory.CraftInventoryView;
+import org.bukkit.craftbukkit.v1_18_R2.util.CraftNamespacedKey;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;

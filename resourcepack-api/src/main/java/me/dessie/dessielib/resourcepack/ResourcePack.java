@@ -13,6 +13,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A created ResourcePack that has been built from a {@link ResourcePackBuilder}
+ */
 public class ResourcePack implements PacketListener {
 
     private static JavaPlugin plugin;

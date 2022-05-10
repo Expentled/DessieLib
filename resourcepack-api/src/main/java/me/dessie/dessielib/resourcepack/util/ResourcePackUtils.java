@@ -9,6 +9,9 @@ import org.bukkit.Bukkit;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
+/**
+ * Utility class for creating ResourcePacks, should only be used to gather information for developing resource packs.
+ */
 public class ResourcePackUtils {
 
     /**

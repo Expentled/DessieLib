@@ -6,6 +6,7 @@ import me.dessie.dessielib.resourcepack.ResourcePackBuilder;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.bukkit.SoundCategory;
+import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,6 +15,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Creates/copies sound files into a ResourcePack.
+ *
+ * @see me.dessie.dessielib.resourcepack.ResourcePack#playSound(Player, SoundAsset, float, float) Playing SoundAssets
+ * @see me.dessie.dessielib.resourcepack.ResourcePack#stopSound(Player, SoundAsset) Stopping SoundAssets
+ */
 public class SoundAsset extends Asset {
 
     private String path;
@@ -98,12 +105,12 @@ public class SoundAsset extends Asset {
                                 new JsonObjectBuilder().add("sounds", array
                                         .add(new JsonObjectBuilder()
                                                 .add("name", asset.getNamespace() + ":" + assetPath + "/" + asset.getName())
-                                                .add("stream", asset.isStreamed()).getObject())
-                                        .getArray()).getObject());
+                                                .add("stream", asset.isStreamed()).build())
+                                        .build()).build());
                     }
                 }
                 assets.stream().findAny().ifPresent(asset -> {
-                    write(object.getObject(), new File(asset.getNamespaceFolder() + "/sounds.json"));
+                    write(object.build(), new File(asset.getNamespaceFolder() + "/sounds.json"));
                 });
             }
         });

@@ -9,13 +9,22 @@ import org.bukkit.util.Vector;
 
 import java.util.List;
 
+/**
+ * Animates a {@link ShapedParticle} so that it can be rendered in to the World.
+ *
+ * All ShapedParticles require a ParticleAnimator to be displayed.
+ * ParticleAnimators are used to change location, and how quickly/frequently a ShapedParticle is rendered.
+ *
+ * It can also be used to only animate the particle a specific number of times.
+ *
+ */
 public class ParticleAnimator extends BukkitRunnable {
 
-    public ShapedParticle particle;
-
     //Data for re-applying the Particle's draw methods.
-    protected Player player;
-    protected Location location;
+    private Player player;
+    private Location location;
+
+    private ShapedParticle particle;
 
     //How many loops the Animator does before automatically cancelling.
     //Setting to 0 will loop forever.
@@ -59,6 +68,26 @@ public class ParticleAnimator extends BukkitRunnable {
     public ShapedParticle getParticle() { return particle; }
 
     /**
+     * Returns the {@link Player} that this particle is displaying to.
+     *
+     * This may return null if the Particle is displaying to all players.
+     *
+     * @return The Player this particle displays to, or null.
+     */
+    protected Player getPlayer() {
+        return this.player;
+    }
+
+    /**
+     * Returns the {@link Location} that the particle started being displayed at.
+     *
+     * @return The original location of the Particle.
+     */
+    protected Location getLocation() {
+        return this.location;
+    }
+
+    /**
      * @return If the animator is currently running.
      */
     public boolean isRunning() { return running; }
@@ -78,6 +107,15 @@ public class ParticleAnimator extends BukkitRunnable {
      */
     public ParticleAnimator setLoops(int loops) {
         this.loops = loops;
+        return this;
+    }
+
+    /**
+     * @param particle Sets the {@link ShapedParticle} that this animator displays.
+     * @return The ParticleAnimator instance
+     */
+    public ParticleAnimator setParticle(ShapedParticle particle) {
+        this.particle = particle;
         return this;
     }
 

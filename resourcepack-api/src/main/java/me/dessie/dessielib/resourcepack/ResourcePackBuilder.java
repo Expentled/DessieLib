@@ -21,6 +21,9 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+/**
+ * Builder class that is used to generate a {@link ResourcePack}
+ */
 public class ResourcePackBuilder {
 
     private String description;
@@ -36,10 +39,15 @@ public class ResourcePackBuilder {
 
     private File icon;
 
+    /**
+     * Creates a default ResourcePackBuilder instance.
+     */
     public ResourcePackBuilder() {
         if(!ResourcePack.isRegistered()) {
             throw new IllegalStateException("You need to register ResourcePackAPI to start creating Builders!");
         }
+
+        this.setDescription("Default description");
     }
 
     /**
@@ -51,6 +59,7 @@ public class ResourcePackBuilder {
 
     /**
      * @param type The Type of Asset to get
+     * @param <T> The class type of asset to get.
      * @return All Asset instances of a specific type that are contained within this ResourcePack.
      */
     public <T extends Asset> List<T> getAssetsOf(Class<T> type) {
@@ -60,12 +69,49 @@ public class ResourcePackBuilder {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Returns the resource pack description
+     * @return The description
+     */
     public String getDescription() { return description; }
+
+    /**
+     * Returns the namespace key of this resourcepack. This is usually your plugin's name.
+     * @return The namespace key
+     */
     public String getNamespace() { return ResourcePack.getPlugin().getName().toLowerCase(); }
+
+    /**
+     * Returns the icon file for this resource pack
+     * @return The icon file
+     */
     public File getIcon() { return icon; }
+
+    /**
+     * Returns the created {@link ResourcePackServer} for this resource pack.
+     * If a resource pack server has not been created, this will return null.
+     *
+     * @see ResourcePackBuilder#createWebhost(String, int)
+     * @return The ResourcePackServer instance
+     */
     public ResourcePackServer getResourcePackServer() {return resourcePackServer;}
+
+    /**
+     * Returns if this resource pack will automatically update if it's changed.
+     * @return If the hash is updated.
+     */
     public boolean isAutoUpdateHash() { return autoUpdateHash; }
+
+    /**
+     * Returns the current resource pack file as a SHA1 hash in HEX.
+     * @return The SHA1 hash in HEX
+     */
     public String getHash() { return hash; }
+
+    /**
+     * Returns the current resource pack file as a SHA1 hash as a byte array.
+     * @return The SHA1 hash as bytes
+     */
     public byte[] getHashBytes() {return hashBytes;}
 
     /**

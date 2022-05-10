@@ -9,6 +9,7 @@ public enum RegistrationType {
     PARTICLE_API,
     RESOURCE_PACK_API,
     PACKETEER,
-    COMMAND_API
+    COMMAND_API,
+    STORAGE_API
 
 }

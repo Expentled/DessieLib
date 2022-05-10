@@ -21,7 +21,11 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.logging.Level;
 
+/**
+ * Creates an HTTP web-host on the server to serve the ResourcePack to players that join the server.
+ */
 public class ResourcePackServer implements HttpHandler, Listener {
 
     private HttpServer server;
@@ -118,6 +122,9 @@ public class ResourcePackServer implements HttpHandler, Listener {
     }
 
     /**
+     * Sets the ResourcePack to send to Players when they join the server.
+     *
+     * If the server failed to start, this method will not do anything, and the pack will not be sent.
      * Note: The resource pack URL will change after this is called.
      *
      * @param pack The new ResourcePack to server players.
@@ -125,9 +132,14 @@ public class ResourcePackServer implements HttpHandler, Listener {
     public void setResourcePack(ResourcePack pack) {
         this.resourcePack = pack;
 
+        if(this.getServer() == null) {
+            Bukkit.getLogger().log(Level.WARNING, "Unable to start ResourcePackServer!");
+            return;
+        }
+
         //Setup the webserver context
         String urlPath = "/resourcepack/" + pack.getBuilder().getHash();
-        server.createContext(urlPath, this);
+        this.getServer().createContext(urlPath, this);
         this.packUrl = "http://" + this.getAddress() + ":" + this.getPort() + urlPath;
 
         //Register the EventHandler
@@ -194,7 +206,7 @@ public class ResourcePackServer implements HttpHandler, Listener {
     }
 
     @EventHandler
-    public void onResourceStatus(PlayerResourcePackStatusEvent event) {
+    private void onResourceStatus(PlayerResourcePackStatusEvent event) {
         if(event.getStatus() == PlayerResourcePackStatusEvent.Status.SUCCESSFULLY_LOADED) {
             this.addLoadedPlayer(event.getPlayer());
         }
@@ -209,7 +221,7 @@ public class ResourcePackServer implements HttpHandler, Listener {
     }
 
     @EventHandler
-    public void onDisable(PluginDisableEvent event) {
+    private void onDisable(PluginDisableEvent event) {
         //Shutdown the WebServer when the plugin disables.
         if(event.getPlugin() == ResourcePack.getPlugin()) {
             this.getResourcePack().getBuilder().getResourcePackServer().getServer().stop(0);
@@ -217,7 +229,7 @@ public class ResourcePackServer implements HttpHandler, Listener {
     }
 
     @EventHandler
-    public void onJoin(PlayerJoinEvent event) {
+    private void onJoin(PlayerJoinEvent event) {
         Bukkit.getScheduler().runTask(ResourcePack.getPlugin(), () -> {
             //When the player joins, send them the resource pack.
             event.getPlayer().setResourcePack(this.getPackUrl(), this.getResourcePack().getBuilder().getHashBytes());
@@ -225,7 +237,7 @@ public class ResourcePackServer implements HttpHandler, Listener {
     }
 
     @EventHandler
-    public void onQuit(PlayerQuitEvent event) {
+    private void onQuit(PlayerQuitEvent event) {
         this.removeLoadedPlayer(event.getPlayer());
     }
 }

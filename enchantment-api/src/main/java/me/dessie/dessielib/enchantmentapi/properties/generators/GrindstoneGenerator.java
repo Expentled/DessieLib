@@ -1,11 +1,11 @@
-package me.dessie.dessielib.enchantmentapi.utils;
+package me.dessie.dessielib.enchantmentapi.properties.generators;
 
 import me.dessie.dessielib.core.events.slot.SlotEventHelper;
 import me.dessie.dessielib.enchantmentapi.CEnchantment;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.ExperienceOrb;
 import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_18_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_18_R2.CraftWorld;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.inventory.ItemStack;
 
@@ -17,7 +17,7 @@ import java.util.Random;
 public class GrindstoneGenerator {
     private static final Random random = new Random();
 
-    public static void doResultUpdate(ItemStack result, ItemStack target) {
+    static void doResultUpdate(ItemStack result, ItemStack target) {
         if (SlotEventHelper.isNullOrAir(result)) return;
 
         for (CEnchantment enchantment : CEnchantment.getEnchantments(target)) {
@@ -30,7 +30,7 @@ public class GrindstoneGenerator {
         }
     }
 
-    public static int getDropExp(ItemStack target, ItemStack other, ItemStack result) {
+    static int getDropExp(ItemStack target, ItemStack other, ItemStack result) {
         int baseExpRandom = 0;
         int baseExp = 0;
 
@@ -69,7 +69,7 @@ public class GrindstoneGenerator {
         return totalXp;
     }
 
-    public static void dropExp(int amount, Location location) {
+    static void dropExp(int amount, Location location) {
         ServerLevel world = (((CraftWorld) location.getWorld()).getHandle());
         while(amount > 0) {
             int k = ExperienceOrb.getExperienceValue(amount);

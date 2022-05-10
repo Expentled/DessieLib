@@ -13,6 +13,9 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.enchantments.EnchantmentTarget;
+import org.bukkit.event.Event;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.*;
@@ -25,11 +28,15 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class CEnchantment extends Enchantment {
+/**
+ * Main class for creating a custom Enchantment, and handles everything related.
+ */
+public class CEnchantment extends Enchantment implements Listener {
 
     private static final List<CEnchantment> enchantments = new ArrayList<>();
 
@@ -114,22 +121,136 @@ public class CEnchantment extends Enchantment {
         return registered;
     }
 
+    /**
+     * Adds an EventListener to this CEnchantment, that will callback your methods when the event is triggered and the predicate is met.
+     * Generally, your predicate will check if the item has this enchantment.
+     *
+     * @param type The Event class
+     * @param predicate The Predicate that should be met to fire your listener.
+     * @param consumer A consumer that accepts the event
+     * @param <T> The class type of the event to listen for.
+     * @return This CEnchantment
+     */
+    public <T extends Event> CEnchantment addEventListener(Class<T> type, BiPredicate<CEnchantment, T> predicate, Consumer<T> consumer) {
+        return this.addEventListener(type, predicate, consumer, EventPriority.NORMAL);
+    }
+
+    /**
+     * Adds an EventListener to this CEnchantment, that will callback your methods when the event is triggered and the predicate is met.
+     * Generally, your predicate will check if the item has this enchantment.
+     *
+     * @param type The Event class
+     * @param predicate The Predicate that should be met to fire your listener.
+     * @param consumer A consumer that accepts the event
+     * @param priority The Event's priority
+     * @param <T> The class type of the event to listen for.
+     * @return This CEnchantment
+     */
+    public <T extends Event> CEnchantment addEventListener(Class<T> type, BiPredicate<CEnchantment, T> predicate, Consumer<T> consumer, EventPriority priority) {
+        CEnchantmentAPI.getPlugin().getServer().getPluginManager().registerEvent(type, this, priority, (listener, event) -> {
+            if(event.getClass() != type) return;
+
+            if(predicate.test(this, (T) event)) {
+                consumer.accept((T) event);
+            }
+        }, CEnchantmentAPI.getPlugin());
+        return this;
+    }
+
+    /**
+     * Returns the {@link BiConsumer} for when an entity with this enchantment attacks another entity.
+     * @return The consumer
+     */
     public BiConsumer<EntityDamageByEntityEvent, CEventResult> getEntityAttack() { return entityAttack; }
+
+    /**
+     * Returns the {@link BiConsumer} for when an entity with this enchantment right clicks
+     * @return The consumer
+     */
     public BiConsumer<PlayerInteractEvent, CEventResult> getRightClick() { return rightClick; }
+
+    /**
+     * Returns the {@link BiConsumer} for when an entity with this enchantment breaks a block
+     * @return The consumer
+     */
     public BiConsumer<BlockBreakEvent, CEventResult> getBlockBreak() { return blockBreak; }
+
+    /**
+     * Returns the {@link BiConsumer} for when an entity with this enchantment places a block
+     * @return The consumer
+     */
     public BiConsumer<BlockPlaceEvent, CEventResult> getBlockPlace() { return blockPlace; }
+
+    /**
+     * Returns the {@link BiConsumer} for when an entity with this enchantment shoots an arrow
+     * @return The consumer
+     */
     public BiConsumer<ProjectileLaunchEvent, CEventResult> getArrowShoot() { return arrowShoot; }
+
+    /**
+     * Returns the {@link BiConsumer} for when an entity with this enchantment has an arrow that they shot land
+     * @return The consumer
+     */
     public BiConsumer<ProjectileHitEvent, CEventResult> getArrowLand() { return arrowLand; }
+
+    /**
+     * Returns the {@link BiConsumer} for when an entity with this enchantment drops an item
+     * @return The consumer
+     */
     public BiConsumer<PlayerDropItemEvent, CEventResult> getDropped() { return dropped; }
+
+    /**
+     * Returns the {@link BiConsumer} for when an entity with this enchantment picks up an item
+     * @return The consumer
+     */
     public BiConsumer<EntityPickupItemEvent, CEventResult> getPickup() { return pickup; }
+
+    /**
+     * Returns the {@link BiConsumer} for when an entity with this enchantment is damaged
+     * @return The consumer
+     */
     public BiConsumer<EntityDamageEvent, CEventResult> getDamaged() { return damaged; }
+
+    /**
+     * Returns the {@link BiConsumer} for when an entity with this enchantment dies
+     * @return The consumer
+     */
     public BiConsumer<EntityDeathEvent, CEventResult> getDeath() { return death; }
 
+    /**
+     * Returns the {@link BiConsumer} for when an entity with this enchantment holds an item
+     * @return The consumer
+     */
     public BiConsumer<SlotUpdateEvent, CEventResult> getHold() { return hold; }
+
+    /**
+     * Returns the {@link BiConsumer} for when an entity with this enchantment stops holding an item
+     * @return The consumer
+     */
     public BiConsumer<SlotUpdateEvent, CEventResult> getUnhold() { return unhold; }
+
+    /**
+     * Returns the {@link BiConsumer} for when an entity with this enchantment equips an armor piece
+     * @return The consumer
+     */
     public BiConsumer<SlotUpdateEvent, CEventResult> getArmorEquip() { return armorEquip; }
+
+    /**
+     * Returns the {@link BiConsumer} for when an entity with this enchantment removes an armor piece
+     * @return The consumer
+     */
     public BiConsumer<SlotUpdateEvent, CEventResult> getArmorUnequip() { return armorUnequip; }
+
+    /**
+     * Returns the {@link BiConsumer} for when an entity with this enchantment enchants an item
+     * @return The consumer
+     */
     public Consumer<CEventResult> getEnchant() { return enchant; }
+
+    /**
+     * Returns the {@link BiConsumer} for when an entity with this enchantment disenchants an item
+     * @return The consumer
+     */
     public Consumer<CEventResult> getDisenchant() { return disenchant; }
 
     /**

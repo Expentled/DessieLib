@@ -3,7 +3,7 @@ package me.dessie.dessielib.commandapi;
 import me.dessie.dessielib.core.utils.Colors;
 import org.bukkit.Bukkit;
 import org.bukkit.command.*;
-import org.bukkit.craftbukkit.v1_18_R1.CraftServer;
+import org.bukkit.craftbukkit.v1_18_R2.CraftServer;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.StringUtil;
@@ -16,6 +16,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Main registering class for XCommand.
+ */
 public abstract class XCommand implements TabExecutor {
 
     private static final List<XCommand> commands = new ArrayList<>();

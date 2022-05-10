@@ -1,15 +1,10 @@
 package me.dessie.dessielib.commandapi;
 
+import me.dessie.dessielib.core.utils.ClassUtil;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Enumeration;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 
 /**
  * Can register commands without them being in the plugin.yml
@@ -48,39 +43,16 @@ public class CommandAPI {
      * @param packageName The package to search for commands in.
      */
     public void registerAllCommands(String packageName) {
-        JarFile file;
-        try {
-            Method method = JavaPlugin.class.getDeclaredMethod("getFile");
-            method.setAccessible(true);
-            file = new JarFile((File) method.invoke(CommandAPI.getPlugin()));
-
-            Enumeration<JarEntry> entries = file.entries();
-            while(entries.hasMoreElements()) {
-                JarEntry entry = entries.nextElement();
-
-                //Rename the JarEntry to use . instead of /
-                String name = entry.getName().replace("/", ".");
-
-                //If it's not a class, skip it.
-                if(!name.endsWith(".class")) continue;
-
-                //Only register if the class exists within the package, or a package wasn't provided.
-                if (packageName != null && !packageName.equals("") && !name.startsWith(packageName)) continue;
-
-                Class<?> clazz = Class.forName(name.substring(0, name.length() - 6));
-
-                //Register the command with the default constructor.
-                if (!XCommand.class.isAssignableFrom(clazz)) continue;
-
-                for (Constructor<?> constructor : clazz.getConstructors()) {
-                    if (constructor.getParameterCount() != 0) continue;
-
+        for(Class<XCommand> clazz : ClassUtil.getClasses(XCommand.class, CommandAPI.getPlugin(), packageName)) {
+            for (Constructor<?> constructor : clazz.getConstructors()) {
+                if (constructor.getParameterCount() != 0) continue;
+                try {
                     XCommand command = (XCommand) constructor.newInstance();
                     command.register();
+                } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+                    e.printStackTrace();
                 }
             }
-        } catch (IOException | ClassNotFoundException | InvocationTargetException | NoSuchMethodException | IllegalAccessException | InstantiationException e) {
-            e.printStackTrace();
         }
     }
 
@@ -101,7 +73,7 @@ public class CommandAPI {
      */
     public static CommandAPI register(JavaPlugin yourPlugin, boolean registerAllCommands) {
         if(isRegistered()) {
-            throw new IllegalStateException("ResourcePack already registered to " + getPlugin().getName());
+            throw new IllegalStateException("CommandAPI already registered to " + getPlugin().getName());
         }
         plugin = yourPlugin;
         registered = true;

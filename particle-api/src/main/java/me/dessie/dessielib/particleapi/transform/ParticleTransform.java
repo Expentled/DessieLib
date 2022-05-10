@@ -7,6 +7,15 @@ import org.bukkit.util.Vector;
 import java.util.List;
 import java.util.function.BiFunction;
 
+/**
+ * Used to transform {@link me.dessie.dessielib.particleapi.shapes.ShapedParticle} as they are being rendered in the world.
+ *
+ * This class is used as a baseline for defining these transformations.
+ *
+ * @see me.dessie.dessielib.particleapi.transform.transformations.ParticleScale
+ * @see me.dessie.dessielib.particleapi.transform.transformations.ParticleRotate
+ * @see me.dessie.dessielib.particleapi.transform.transformations.ParticleTranslate
+ */
 public abstract class ParticleTransform {
     private final int frames;
     private int currentStep = 0;

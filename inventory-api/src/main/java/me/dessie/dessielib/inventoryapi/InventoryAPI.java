@@ -12,6 +12,10 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.plugin.java.JavaPlugin;
 
+/**
+ * Main class for registering InventoryAPI.
+ * Also manages the Listener aspect of the API.
+ */
 public class InventoryAPI implements Listener {
 
     private static boolean registered = false;

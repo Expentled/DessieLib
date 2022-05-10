@@ -2,21 +2,20 @@ package me.dessie.dessielib.resourcepack.listeners;
 
 import com.google.common.util.concurrent.AtomicDouble;
 import me.dessie.dessielib.packeteer.PacketListener;
-import me.dessie.dessielib.packeteer.PacketeerHandler;
 import me.dessie.dessielib.resourcepack.ResourcePack;
 import me.dessie.dessielib.resourcepack.assets.BlockStateAsset;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.game.ClientboundBlockDestructionPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.craftbukkit.v1_18_R1.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_18_R2.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockDamageAbortEvent;
 import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -29,6 +28,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+/**
+ * Internal class used for mimicking the strength of blocks for breaking.
+ */
 public class BlockListener implements Listener, PacketListener {
 
     private final JavaPlugin plugin;
@@ -37,24 +39,21 @@ public class BlockListener implements Listener, PacketListener {
     private final Map<Block, BukkitTask> breaking = new HashMap<>();
     private final Map<Block, Integer> id = new HashMap<>();
 
+    /**
+     * Creates a new BlockListener
+     * @param plugin The plugin that is listening
+     * @param pack The ResourcePack associated with this listener
+     */
     public BlockListener(JavaPlugin plugin, ResourcePack pack) {
         this.plugin = plugin;
         this.pack = pack;
     }
 
-    public ResourcePack getPack() {return pack;}
-    public JavaPlugin getPlugin() {return plugin;}
-
-    @PacketeerHandler
-    public void onBlockDestroy(ServerboundPlayerActionPacket packet, Player player) {
-        if(packet.getAction() == ServerboundPlayerActionPacket.Action.ABORT_DESTROY_BLOCK || packet.getAction() == ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK) {
-            BlockPos pos = packet.getPos();
-            Bukkit.getPluginManager().callEvent(new BlockStopDamageEvent(player, player.getWorld().getBlockAt(pos.getX(), pos.getY(), pos.getZ())));
-        }
-    }
+    private ResourcePack getPack() {return pack;}
+    private JavaPlugin getPlugin() {return plugin;}
 
     @EventHandler
-    public void onStopBlockDamage(BlockStopDamageEvent event) {
+    private void onStopBlockDamage(BlockDamageAbortEvent event) {
         Player player = event.getPlayer();
 
         if(!breaking.containsKey(event.getBlock())) return;
@@ -68,7 +67,7 @@ public class BlockListener implements Listener, PacketListener {
     }
 
     @EventHandler
-    public void onBlockDamage(BlockDamageEvent event) {
+    private void onBlockDamage(BlockDamageEvent event) {
         Block block = event.getBlock();
 
         BlockStateAsset asset = null;
@@ -91,7 +90,7 @@ public class BlockListener implements Listener, PacketListener {
         }
 
         Bukkit.getScheduler().runTaskLater(this.getPlugin(), () -> {
-            event.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.SLOW_DIGGING, Integer.MAX_VALUE, 4, false, false, false));
+            event.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.SLOW_DIGGING, Integer.MAX_VALUE, -1, false, false, false));
         }, 2);
 
         AtomicDouble progress = new AtomicDouble(0);

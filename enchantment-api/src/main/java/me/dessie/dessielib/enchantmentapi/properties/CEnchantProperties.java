@@ -8,6 +8,7 @@ import java.util.function.Function;
 
 /**
  * Used to define the enchantment properties for obtaining a specific enchantment
+ * By default, all properties are false.
  *
  * This includes the enchantment rarity and where the enchantment can be obtained.
  * Also includes information about how enchantments will behave under specific circumstances, such as when used in a grindstone.

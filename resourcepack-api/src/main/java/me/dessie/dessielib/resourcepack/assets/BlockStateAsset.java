@@ -11,9 +11,9 @@ import net.minecraft.world.level.block.state.properties.Property;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.craftbukkit.v1_18_R1.block.CraftBlock;
-import org.bukkit.craftbukkit.v1_18_R1.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_18_R1.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.v1_18_R2.block.CraftBlock;
+import org.bukkit.craftbukkit.v1_18_R2.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_18_R2.inventory.CraftItemStack;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -243,10 +243,10 @@ public class BlockStateAsset extends Asset implements Listener {
                                 property.add(key, (Character) value);
                             }
                         }
-                        object.add(state.toString(), property.getObject());
+                        object.add(state.toString(), property.build());
                     }
 
-                    write(new JsonObjectBuilder().add("variants", object.getObject()).getObject(), blockStateFile);
+                    write(new JsonObjectBuilder().add("variants", object.build()).build(), blockStateFile);
                 }
             }
         });
@@ -416,6 +416,7 @@ public class BlockStateAsset extends Asset implements Listener {
      * @param type The Event class
      * @param predicate The Predicate that should be met to fire your listener.
      * @param consumer A consumer that accepts the event
+     * @param <T> The class type of event to listen for
      * @return This BlockStateAsset
      */
     public <T extends Event> BlockStateAsset addEventListener(Class<T> type, BiPredicate<BlockStateAsset, T> predicate, Consumer<T> consumer) {
@@ -430,6 +431,7 @@ public class BlockStateAsset extends Asset implements Listener {
      * @param predicate The Predicate that should be met to fire your listener.
      * @param consumer A consumer that accepts the event
      * @param priority The Event's priority
+     * @param <T> The class type of Event to listen for
      * @return This BlockStateAsset
      */
     public <T extends Event> BlockStateAsset addEventListener(Class<T> type, BiPredicate<BlockStateAsset, T> predicate, Consumer<T> consumer, EventPriority priority) {
@@ -456,6 +458,7 @@ public class BlockStateAsset extends Asset implements Listener {
                 return false;
             }
         }
+
         return true;
     }
 }

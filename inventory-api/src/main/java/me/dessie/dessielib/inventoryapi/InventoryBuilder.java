@@ -11,6 +11,9 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
+/**
+ * Builder for creating Inventories with InventoryAPI.
+ */
 public class InventoryBuilder {
     private static HashMap<Player, InventoryBuilder> inventories = new HashMap<>();
 
@@ -31,8 +34,8 @@ public class InventoryBuilder {
 
     /**
      * Creates an empty Inventory with a size and title.
-     * @param size
-     * @param name
+     * @param size The size of the Inventory, should be divisible by 9 and no larger than 54.
+     * @param name The name of the Inventory.
      */
     public InventoryBuilder(int size, String name) {
         if(!InventoryAPI.isRegistered()) {
@@ -56,10 +59,12 @@ public class InventoryBuilder {
     /**
      * Creates a complete copy of this Inventory.
      *
-     * @param builder
+     * @param builder The InventoryBuilder to copy.
      * @param pages If pages should be copied
      */
     public InventoryBuilder(InventoryBuilder builder, boolean pages) {
+        Objects.requireNonNull(builder, "Cannot copy null builder!");
+
         this.size = builder.getSize();
         this.name = builder.getName();
         this.close = builder.close;
@@ -151,6 +156,7 @@ public class InventoryBuilder {
 
     /**
      * Forcefully closes the Inventory.
+     *
      * @param player The player to close
      * @return The InventoryBuilder
      */
@@ -813,8 +819,12 @@ public class InventoryBuilder {
         }
     }
 
+    /**
+     * Returns a map all players that have opened InventoryBuilders
+     *
+     * @return A Player -> InventoryBuilder map of all opened InventoryBuilders.
+     */
     public static Map<Player, InventoryBuilder> getInventories() {
         return inventories;
     }
-
 }

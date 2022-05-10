@@ -1,4 +1,4 @@
-package me.dessie.dessielib.enchantmentapi.utils;
+package me.dessie.dessielib.enchantmentapi.properties.generators;
 
 import org.bukkit.enchantments.Enchantment;
 
@@ -9,15 +9,15 @@ import java.util.Random;
  */
 public class VillagerGenerator {
 
-    public static Enchantment getRandomEnchantment() {
+    static Enchantment getRandomEnchantment() {
         return Enchantment.values()[new Random().nextInt(Enchantment.values().length)];
     }
 
-    public static int getRandomLevel(Enchantment enchantment) {
+    static int getRandomLevel(Enchantment enchantment) {
         return new Random().nextInt(enchantment.getMaxLevel()) + 1;
     }
 
-    public static int getRandomCost(int level, Enchantment enchantment) {
+    static int getRandomCost(int level, Enchantment enchantment) {
         int min = 8;
         int max = 32;
 

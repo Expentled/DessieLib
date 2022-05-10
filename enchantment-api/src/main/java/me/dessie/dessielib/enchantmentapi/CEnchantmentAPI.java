@@ -2,9 +2,12 @@ package me.dessie.dessielib.enchantmentapi;
 
 import me.dessie.dessielib.core.events.slot.SlotEventHelper;
 import me.dessie.dessielib.enchantmentapi.listener.CEnchantmentListener;
-import me.dessie.dessielib.enchantmentapi.properties.PropertyListener;
+import me.dessie.dessielib.enchantmentapi.properties.generators.PropertyListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
+/**
+ * Main registering class for EnchantmentAPI.
+ */
 public class CEnchantmentAPI {
     private static JavaPlugin plugin;
     private static boolean registered;

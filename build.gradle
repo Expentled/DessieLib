@@ -1,39 +1,34 @@
 plugins {
-    id 'java'
+    id "com.github.johnrengelman.shadow" version "7.1.2"
     id 'java-library'
     id 'maven-publish'
 }
 
 group 'me.dessie'
-version '1.2.1'
+version '1.3.0'
 
 //Define the Minecraft and SpecialSource Versions.
-String minecraftVersion = "1.18.1-R0.1-SNAPSHOT"
+String minecraftVersion = "1.18.2-R0.1-SNAPSHOT"
 String specialSourceVersion = "1.11.0"
 
 //Apply the java plugin across subprojects.
 subprojects {
-    apply plugin: 'java'
     apply plugin: 'java-library'
     apply plugin: 'maven-publish'
 }
 
 //Make sure the plugin.yml version is similar to the project version.
-processResources {
-    filesMatching('plugin.yml') {
-        expand(ver: project.version)
-    }
+processResources.filesMatching('plugin.yml') {
+    expand(ver: project.version)
 }
 
 project.gradle.projectsEvaluated {
     allprojects {
-        java.sourceCompatibility = java.targetCompatibility = JavaVersion.VERSION_17
-        compileJava.options.encoding = 'UTF-8'
-
-        java {
-            withSourcesJar()
-            withJavadocJar()
+        java.toolchain {
+            languageVersion = JavaLanguageVersion.of(17)
         }
+
+        compileJava.options.encoding = 'UTF-8'
 
         task obfuscate {
             description 'Generates a JAR where Mojangs Mappings are first mapped to obfuscated, and then mapped to Spigots mappings. This jar can run on a Spigot server.'
@@ -74,20 +69,20 @@ project.gradle.projectsEvaluated {
 
         //Repositories that all modules use.
         repositories {
-            mavenLocal()
             mavenCentral()
+            mavenLocal()
         }
 
         dependencies {
             //All modules depend on Spigot, duh.
             compileOnly "org.spigotmc:spigot:${minecraftVersion}:remapped-mojang"
+            compileOnly "org.spigotmc:spigot-api:${minecraftVersion}"
 
             //Only used so Spigot Sources do not have annotation errors.
             compileOnly 'org.jetbrains:annotations:16.0.2'
 
             //SpecialSource dependency
-            compileOnly "net.md-5:SpecialSource:${specialSourceVersion}:shaded"
-
+            compileOnly"net.md-5:SpecialSource:${specialSourceVersion}:shaded"
         }
     }
 }
@@ -99,23 +94,37 @@ configure(subprojects.findAll {it.name != 'core'}) {
     }
 }
 
+task configurePublish {
+    description 'Configures the project to compile the JavaDoc and Sources JARs.'
+    group = 'publishing'
+
+    doFirst {
+        java {
+            withJavadocJar()
+            withSourcesJar()
+        }
+    }
+}
+
 //Make sure all projects can be published except a testing experimental one.
 configure(allprojects.findAll {it.name != 'experimental'}) {
+
+    //Generate the JavaDoc and Sources JARs before publishing.
+    publish.dependsOn(configurePublish)
+
     publishing {
-        repositories {
-            maven {
-                name = "GitHubPackages"
-                url "https://maven.pkg.github.com/dessie0/dessielib"
-                credentials {
-                    username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_USERNAME")
-                    password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
-                }
+        repositories.maven {
+            name = "GitHubPackages"
+            url "https://maven.pkg.github.com/dessie0/dessielib"
+            credentials {
+                username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_USERNAME")
+                password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
             }
         }
 
         publications {
             gpr(MavenPublication) {
-                groupId "me.dessie.dessielib"
+                groupId 'me.dessie.dessielib'
                 artifactId project.name
                 from components.java
             }
@@ -125,32 +134,27 @@ configure(allprojects.findAll {it.name != 'experimental'}) {
 
 //Copy the JAR to the output directory
 task copyJar(type: Copy) {
-    from "$buildDir/libs/" + rootProject.name + '-' + rootProject.version + '.jar'
-    into rootProject.findProperty("outputDir")
+    String outputDir = rootProject.findProperty("outputDir")
+
+    from "${buildDir}/libs/${project.name}-${project.version}.jar"
+    into outputDir == null ? "${buildDir}/libs" : outputDir
 }
 
 build.finalizedBy copyJar
 
 dependencies {
-    implementation project(":core")
-    implementation project(":packeteer")
-    implementation project(":inventory-api")
-    implementation project(":enchantment-api")
-    implementation project(":scoreboard-api")
-    implementation project(":resourcepack-api")
-    implementation project(":particle-api")
-    implementation project(":command-api")
-    implementation project(":storage-api")
+    subprojects.forEach {
+        api it
+    }
 }
 
 //Used to create the fat jar
-jar {
-    from {
-        configurations.runtimeClasspath.collect {
-            exclude 'module-info.class'
-            exclude 'META-INF/**/*'
-
-            it.isDirectory() ? it : zipTree(it)
+build.dependsOn {
+    shadowJar {
+        archiveFileName = "${project.name}-${project.version}.jar"
+        dependencies {
+            exclude project(":experimental")
         }
     }
 }
+

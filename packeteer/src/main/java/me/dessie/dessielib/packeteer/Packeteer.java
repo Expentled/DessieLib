@@ -4,7 +4,7 @@ import io.netty.channel.*;
 import io.netty.util.concurrent.Promise;
 import net.minecraft.network.protocol.Packet;
 import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.v1_18_R1.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_18_R2.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -39,6 +39,8 @@ public class Packeteer implements Listener {
 
     /**
      * Enables Packeteer to start listening for packets.
+     * @param yourPlugin Your plugin instance
+     * @return A {@link Packeteer} instance for usage.
      */
     public static Packeteer register(JavaPlugin yourPlugin) {
         if(isRegistered()) {
@@ -62,6 +64,11 @@ public class Packeteer implements Listener {
      * @return All Players that are currently injected into Packeteer's Pipeline
      */
     public static List<UUID> getInjectedPlayers() {return injectedPlayers;}
+
+    /**
+     * Returns the {@link JavaPlugin} that registered Packeteer.
+     * @return The plugin that registered.
+     */
     public static JavaPlugin getPlugin() {return plugin;}
 
     /**

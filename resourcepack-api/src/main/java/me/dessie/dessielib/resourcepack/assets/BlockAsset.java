@@ -128,7 +128,7 @@ public class BlockAsset extends Asset {
                         File assetFile = new File(asset.getMinecraftBlockModelFolder(), fileName);
                         //Generate the .json for the asset with the appropriate custom model id.
                         JsonObject json = new JsonObjectBuilder().add("parent", asset.getNamespace() + ":block/" + asset.getName())
-                                .getObject();
+                                .build();
                         //Save the JSON file.
                         write(json, assetFile);
                     }
@@ -150,7 +150,7 @@ public class BlockAsset extends Asset {
                         }
 
                         JsonObject json = new JsonObjectBuilder().add("parent", asset.getParentModel())
-                                .add("textures", textureObject.getObject()).getObject();
+                                .add("textures", textureObject.build()).build();
 
                         write(json, customModel);
                     } else {

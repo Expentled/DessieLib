@@ -19,6 +19,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
+/**
+ * Builder for creating Items to put into InventoryBuilders.
+ */
 public class ItemBuilder {
 
     private InventoryBuilder builder;
