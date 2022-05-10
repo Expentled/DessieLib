@@ -28,6 +28,12 @@ project.gradle.projectsEvaluated {
             languageVersion = JavaLanguageVersion.of(17)
         }
 
+        //Only used when publishing, not needed to generate when normal builds are being done.
+//        java {
+//            withJavadocJar()
+//            withSourcesJar()
+//        }
+
         compileJava.options.encoding = 'UTF-8'
 
         task obfuscate {
@@ -94,24 +100,8 @@ configure(subprojects.findAll {it.name != 'core'}) {
     }
 }
 
-task configurePublish {
-    description 'Configures the project to compile the JavaDoc and Sources JARs.'
-    group = 'publishing'
-
-    doFirst {
-        java {
-            withJavadocJar()
-            withSourcesJar()
-        }
-    }
-}
-
 //Make sure all projects can be published except a testing experimental one.
 configure(allprojects.findAll {it.name != 'experimental'}) {
-
-    //Generate the JavaDoc and Sources JARs before publishing.
-    publish.dependsOn(configurePublish)
-
     publishing {
         repositories.maven {
             name = "GitHubPackages"
@@ -144,7 +134,9 @@ build.finalizedBy copyJar
 
 dependencies {
     subprojects.forEach {
-        api it
+        if(it.name != 'experimental') {
+            api it
+        }
     }
 }
 
@@ -152,6 +144,7 @@ dependencies {
 build.dependsOn {
     shadowJar {
         archiveFileName = "${project.name}-${project.version}.jar"
+
         dependencies {
             exclude project(":experimental")
         }
