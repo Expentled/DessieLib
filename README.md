@@ -23,7 +23,7 @@ maven {
 }
 
 dependencies {
-  compileOnly 'me.dessie.dessielib:dessielib:1.2.2'
+  compileOnly 'me.dessie.dessielib:dessielib:1.3.0'
 }
 ```
 
@@ -33,7 +33,7 @@ dependencies {
   <dependency>
     <groupId>me.dessie.dessielib</groupId>
     <artifactId>dessielib</artifactId>
-    <version>1.2.2</version>
+    <version>1.3.0</version>
   </dependency>
 </dependencies>
 ```
@@ -45,7 +45,7 @@ depends: [DessieLib]
 ```
 to your plugin.yml.
 
-You can download the standalone JAR file from the latest packages release, the latest [release](https://github.com/Dessie0/DessieLib/releases/tag/1.2.2) or clone the repository and build the JAR yourself.
+You can download the standalone JAR file from the latest packages release, the latest [release](https://github.com/Dessie0/DessieLib/releases/tag/1.3.0) or clone the repository and build the JAR yourself.
 
 ### :iphone: Features
 
