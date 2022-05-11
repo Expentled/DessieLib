@@ -11,8 +11,21 @@ import me.dessie.dessielib.scoreboardapi.ScoreboardAPI;
 import me.dessie.dessielib.storageapi.StorageAPI;
 import org.bukkit.plugin.java.JavaPlugin;
 
+/**
+ * Handles registering of the modules in DessieLib when using it externally.
+ */
 public class Register {
 
+    /**
+     * Registers specific parts of DessieLib contained within a single method.
+     *
+     * This should only be used if you're depending on DessieLib externally, and not shading individual modules.
+     *
+     * @see RegistrationType
+     *
+     * @param plugin The registering plugin
+     * @param types The types of API to register
+     */
     public static void register(JavaPlugin plugin, RegistrationType... types) {
         for(RegistrationType type : types) {
             switch (type) {
