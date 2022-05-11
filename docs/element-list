@@ -1,3 +1,4 @@
+me.dessie.dessielib
 me.dessie.dessielib.commandapi
 me.dessie.dessielib.core.events.slot
 me.dessie.dessielib.core.utils
@@ -22,6 +23,7 @@ me.dessie.dessielib.particleapi.transform
 me.dessie.dessielib.particleapi.transform.orientation
 me.dessie.dessielib.particleapi.transform.transformations
 me.dessie.dessielib.particleapi.wrapper
+me.dessie.dessielib.registration
 me.dessie.dessielib.resourcepack
 me.dessie.dessielib.resourcepack.assets
 me.dessie.dessielib.resourcepack.hash
