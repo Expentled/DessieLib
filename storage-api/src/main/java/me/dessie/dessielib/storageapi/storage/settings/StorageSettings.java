@@ -72,6 +72,9 @@ public class StorageSettings {
     /**
      * Sets whether the {@link StorageContainer} should cache objects.
      *
+     * Note that disabling the cache will hinder the effectiveness of using methods such as {@link StorageContainer#retrieve(Class, String)}
+     * For example, storing an object and attempting to retrieve it right after will return null since a store is run asynchronously.
+     *
      * @param usesCache True if objects should be cached, false if not.
      * @return The StorageSettings instance.
      */

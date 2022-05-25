@@ -1,4 +1,4 @@
-package me.dessie.dessielib.storageapi.storage.decomposition.annotations;
+package me.dessie.dessielib.annotations.storageapi;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -6,8 +6,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotates a constructor as a default way to recompose a {@link me.dessie.dessielib.storageapi.storage.decomposition.StorageDecomposer}
- * when it's being retrieved from a {@link me.dessie.dessielib.storageapi.storage.container.StorageContainer}
+ * Annotates a constructor as a default way to recompose a StorageDecomposer using StorageAPI
+ * when it's being retrieved from a StorageAPI's StorageContainer
  *
  * This constructor must have it's parameters in the same order as all {@link Stored} fields are defined in the class.
  * Additionally, the amount of parameters in this constructor should match the amount of {@link Stored} annotated fields.
@@ -20,9 +20,9 @@ public @interface RecomposeConstructor {
 
     /**
      * Determines if the parameters of the constructor are allowed to be null.
-     * Note, that an object returns null if it does not exist in the data structure.
+     * Note that an object returns null if it does not exist in the data structure.
      *
-     * If this is false, and a null argument is found, the object will fail to recompose.
+     * If this is false, and a null argument is found, the object will fail to recompose and will returned as null.
      *
      * @return If null arguments are allowed to be passed to the constructor.
      */

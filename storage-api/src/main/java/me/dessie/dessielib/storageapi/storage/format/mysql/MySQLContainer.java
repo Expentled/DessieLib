@@ -1,5 +1,6 @@
 package me.dessie.dessielib.storageapi.storage.format.mysql;
 
+import me.dessie.dessielib.core.utils.tuple.Pair;
 import me.dessie.dessielib.storageapi.storage.container.StorageContainer;
 import me.dessie.dessielib.storageapi.storage.container.hooks.DeleteHook;
 import me.dessie.dessielib.storageapi.storage.container.hooks.RetrieveHook;
@@ -10,7 +11,6 @@ import me.dessie.dessielib.storageapi.storage.format.mysql.column.Column;
 import me.dessie.dessielib.storageapi.storage.format.mysql.column.ColumnPredicate;
 import me.dessie.dessielib.storageapi.storage.format.mysql.table.Table;
 import me.dessie.dessielib.storageapi.storage.settings.StorageSettings;
-import oshi.util.tuples.Pair;
 
 import java.sql.*;
 import java.util.*;
@@ -90,7 +90,7 @@ public class MySQLContainer extends StorageContainer {
      */
     public void set(Table table, Map<Column, Object> columns, ColumnPredicate... predicates) {
         Pair<String, Object[]> path = createPath(table, columns, predicates);
-        this.set(path.getA(), path.getB());
+        this.set(path.getKey(), path.getValue());
     }
 
     /**
@@ -123,7 +123,7 @@ public class MySQLContainer extends StorageContainer {
         if(columns.isEmpty()) { throw new IllegalArgumentException("You must provide atleast one column to store to!"); }
 
         Pair<String, Object[]> path = createPath(table, columns, predicates);
-        super.store(path.getA(), path.getB());
+        super.store(path.getKey(), path.getValue());
     }
 
     /**
@@ -140,7 +140,7 @@ public class MySQLContainer extends StorageContainer {
         Objects.requireNonNull(table, "Cannot remove from null table!");
 
         Pair<String, Object[]> path = createPath(table, null, predicates);
-        super.remove(path.getA());
+        super.remove(path.getKey());
     }
 
     /**
@@ -153,7 +153,7 @@ public class MySQLContainer extends StorageContainer {
         Objects.requireNonNull(table, "Cannot delete from null table!");
 
         Pair<String, Object[]> path = createPath(table, null, predicates);
-        super.delete(path.getA());
+        super.delete(path.getKey());
     }
 
     /**
@@ -174,7 +174,7 @@ public class MySQLContainer extends StorageContainer {
         Objects.requireNonNull(column, "Cannot get from null column!");
 
         Pair<String, Object[]> path = createPath(table, new HashMap<>() {{ put(column, 0); }}, predicates);
-        return super.get(path.getA());
+        return super.get(path.getKey());
     }
 
     /**
@@ -198,7 +198,7 @@ public class MySQLContainer extends StorageContainer {
         Objects.requireNonNull(column, "Cannot retrieve from null column!");
 
         Pair<String, Object[]> path = createPath(table, new HashMap<>() {{ put(column, 0); }}, predicates);
-        return super.retrieve(path.getA());
+        return super.retrieve(path.getKey());
     }
 
     /**

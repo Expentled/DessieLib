@@ -2,6 +2,7 @@ package me.dessie.dessielib.storageapi.storage.format.flatfile;
 
 import com.google.gson.*;
 import com.google.gson.internal.LinkedTreeMap;
+import me.dessie.dessielib.core.utils.json.JsonObjectBuilder;
 import me.dessie.dessielib.core.utils.tuple.Pair;
 import me.dessie.dessielib.storageapi.storage.container.RetrieveArrayContainer;
 import me.dessie.dessielib.storageapi.storage.container.StorageContainer;
@@ -98,19 +99,16 @@ public class JSONContainer extends RetrieveArrayContainer<JsonArray, JsonObject>
             if(this.getElement(String.join(".", Arrays.copyOfRange(tree, 0, tree.length - 1)), true) instanceof JsonObject object) {
                 object.add(tree[tree.length - 1], this.getGson().toJsonTree(data));
             }
-        }).onComplete(() -> {
-            this.write();
-        });
+        }).onComplete(this::write);
     }
 
     @Override
     protected RetrieveHook retrieveHook() {
         return new RetrieveHook(path -> {
             String[] tree = path.split("\\.");
-            if(this.getElement(path, false) instanceof JsonObject object) {
-                return retrieveCorrectly(object, tree[tree.length - 1]);
-            }
-            return null;
+            JsonObject retrieved = this.getRetrieveElement(path);
+
+            return retrieveCorrectly(retrieved, tree[tree.length - 1]);
         });
     }
 
@@ -219,7 +217,7 @@ public class JSONContainer extends RetrieveArrayContainer<JsonArray, JsonObject>
 
     private Object retrieveCorrectly(JsonObject object, String key) {
         Object retrieve = this.getGson().fromJson(object.get(key), Object.class);
-        if(retrieve.getClass() == Double.class && !object.get(key).getAsString().contains(".")) {
+        if(retrieve != null && retrieve.getClass() == Double.class && !object.get(key).getAsString().contains(".")) {
             return object.get(key).getAsInt();
         } else if(retrieve instanceof LinkedTreeMap<?,?> || retrieve instanceof ArrayList) {
             return object.get(key);
@@ -253,6 +251,18 @@ public class JSONContainer extends RetrieveArrayContainer<JsonArray, JsonObject>
         List<String> keys = new ArrayList<>(tree.keySet());
 
         return tree.get(keys.get(keys.size() - 1));
+    }
+
+    //Always returns a JsonObject instead of a JsonElement
+    private JsonObject getRetrieveElement(String path) {
+        if(path.equals("")) return this.getObject();
+
+        Map<String, JsonElement> tree = this.getTree(path, false);
+        List<String> keys = new ArrayList<>(tree.keySet());
+
+        //We always want a JsonObject to be returned, and the value will be retrieved from that.
+        //We can just use the last value from the keys and tree, since that's the element we're trying to obtain.
+        return new JsonObjectBuilder().add(keys.get(keys.size() - 1), tree.get(keys.get(keys.size() - 1))).build();
     }
 
     private void write() {

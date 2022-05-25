@@ -23,7 +23,7 @@ maven {
 }
 
 dependencies {
-  compileOnly 'me.dessie.dessielib:dessielib:1.3.0'
+  compileOnly 'me.dessie.dessielib:dessielib:1.3.1'
 }
 ```
 
@@ -33,7 +33,7 @@ dependencies {
   <dependency>
     <groupId>me.dessie.dessielib</groupId>
     <artifactId>dessielib</artifactId>
-    <version>1.3.0</version>
+    <version>1.3.1</version>
   </dependency>
 </dependencies>
 ```
@@ -45,7 +45,7 @@ depends: [DessieLib]
 ```
 to your plugin.yml.
 
-You can download the standalone JAR file from the latest packages release, the latest [release](https://github.com/Dessie0/DessieLib/releases/tag/v1.3.0) or clone the repository and build the JAR yourself.
+You can download the standalone JAR file from the latest packages release, the latest [release](https://github.com/Dessie0/DessieLib/releases/tag/v1.3.1) or clone the repository and build the JAR yourself.
 
 ### :iphone: Features
 
@@ -59,6 +59,17 @@ DessieLib provides many features that are cumbersome in CraftBukkit and Spigot, 
 - `Packeteer` Allows you to listen for incoming and outgoing packets, and fire events for these packets.
 - `CommandAPI` can automatically register your commands without needing to write them in the plugin.yml
 - `StorageAPI` easily stores, retrieves, and deletes data from different types of data structures.
+
+#### Annotations
+Additionally, DessieLib provides some annotations for error/warning catching when using other DessieLib libraries.
+Right now, StorageAPI is the only library that has existing annotations.
+
+If you wish to enable these annotations, make sure to add the following into your build.gradle `dependencies` block.
+```groovy
+annotationProcessor 'me.dessie.dessielib:annotations:1.3.1'
+```
+
+#### API Examples
 
 <details>
 <summary>Basic InventoryAPI Usage</summary>
@@ -572,6 +583,7 @@ public class Main extends JavaPlugin {
     public YAMLContainer getContainer() {
         return container;
     }
+}
 ```
 
 </details>

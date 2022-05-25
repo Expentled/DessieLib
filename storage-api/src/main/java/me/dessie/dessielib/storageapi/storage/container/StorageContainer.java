@@ -702,7 +702,6 @@ public abstract class StorageContainer {
      */
     private CompletableFuture<Void> storeData(String path, Object data) {
         Objects.requireNonNull(path, "Cannot store to null path!");
-
         CompletableFuture<Void> future = new CompletableFuture<>();
 
         if (data != null && !isSupported(data.getClass())) {

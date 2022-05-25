@@ -83,15 +83,7 @@ public class StorageCache {
      * @param object The CachedObject to remove.
      */
     public void remove(CachedObject object) {
-        String path = null;
-        for(Map.Entry<String, CachedObject> entry : this.getCache().entrySet()) {
-            if(entry.getValue() == object) {
-                path = entry.getKey();
-                break;
-            }
-        }
-
-        if(path != null) this.getCache().remove(path);
+        this.getCache().entrySet().removeIf(entry -> entry.getValue() == object);
     }
 
     /**

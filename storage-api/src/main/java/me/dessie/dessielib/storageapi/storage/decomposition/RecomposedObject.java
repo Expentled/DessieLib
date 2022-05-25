@@ -131,7 +131,13 @@ public class RecomposedObject<T> {
      */
     @SuppressWarnings("unchecked")
     public <M> M getCompletedObject(String path) {
-        return (M) pathCompleted.get(path).join();
+        CompletableFuture<Object> future = this.getCompletedPath().get(path);
+
+        if(future == null) {
+            throw new IllegalStateException("No object found at path \"" + path + "\"");
+        }
+
+        return (M) future.join();
     }
 
     /**
