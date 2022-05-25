@@ -36,7 +36,6 @@ me.dessie.dessielib.storageapi.storage.cache
 me.dessie.dessielib.storageapi.storage.container
 me.dessie.dessielib.storageapi.storage.container.hooks
 me.dessie.dessielib.storageapi.storage.decomposition
-me.dessie.dessielib.storageapi.storage.decomposition.annotations
 me.dessie.dessielib.storageapi.storage.format.flatfile
 me.dessie.dessielib.storageapi.storage.format.mysql
 me.dessie.dessielib.storageapi.storage.format.mysql.column
