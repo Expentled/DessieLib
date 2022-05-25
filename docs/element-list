@@ -1,4 +1,5 @@
 me.dessie.dessielib
+me.dessie.dessielib.annotations.storageapi
 me.dessie.dessielib.commandapi
 me.dessie.dessielib.core.events.slot
 me.dessie.dessielib.core.utils
