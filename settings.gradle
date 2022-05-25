@@ -9,5 +9,6 @@ include 'packeteer'
 include 'enchantment-api'
 include 'command-api'
 include 'storage-api'
+include 'annotations'
 
 include 'experimental'

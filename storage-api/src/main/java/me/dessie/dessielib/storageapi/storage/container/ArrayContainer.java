@@ -20,6 +20,8 @@ import java.util.stream.Stream;
  * Please note, that it is the implementers' responsibility to add functionality
  * for storing and retrieving of lists within the respective hooks.
  *
+ * @see RetrieveArrayContainer If you're creating your own ArrayContainer class. It may provide an easier way to retrieve your items with lists.
+ *
  * @param <H> The Handler type, for storing and retrieving lists from the structure.
  *            Generally, this will be some natively supported array implementation such as {@link com.google.gson.JsonArray} or {@link ArrayList}.
  */
