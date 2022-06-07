@@ -116,9 +116,7 @@ public class JSONContainer extends RetrieveArrayContainer<JsonArray, JsonObject>
     protected DeleteHook deleteHook() {
         return new DeleteHook(path -> {
             String[] tree = path.split("\\.");
-            if(this.getElement(path, false) instanceof JsonObject object) {
-                object.remove(tree[tree.length - 1]);
-            }
+            object.remove(tree[tree.length - 1]);
         }).onComplete(this::write);
     }
 

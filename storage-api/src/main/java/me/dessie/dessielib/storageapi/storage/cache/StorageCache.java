@@ -97,11 +97,14 @@ public class StorageCache {
      */
     public void flush() {
         if(!this.getSetCache().isEmpty()) {
-            this.getContainer().storeAll(this.getSetCache());
+            StorageCache cache = this;
+            this.getContainer().storeAll(new HashMap<>() {{
+                putAll(cache.getSetCache());
+            }});
         }
 
         if(!this.getRemoveCache().isEmpty()) {
-            this.getContainer().deleteAll(this.getRemoveCache());
+            this.getContainer().deleteAll(new ArrayList<>(this.getRemoveCache()));
         }
     }
 

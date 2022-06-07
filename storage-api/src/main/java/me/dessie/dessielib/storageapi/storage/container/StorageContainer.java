@@ -270,10 +270,13 @@ public abstract class StorageContainer {
 
         CompletableFuture<Void> future = new CompletableFuture<>();
 
+        //Store if it could flush at the time of calling.
+        boolean canFlush = this.getCache().getFlushTask().canFlush();
+
         Bukkit.getScheduler().runTaskAsynchronously(StorageAPI.getPlugin(), () -> {
             this.deleteHook().getConsumer().accept(path);
 
-            if(this.getCache().getFlushTask().canFlush()) {
+            if(canFlush) {
                 this.deleteHook().complete();
                 this.getCache().getFlushTask().resetFlushCooldown();
 
@@ -310,7 +313,10 @@ public abstract class StorageContainer {
         Bukkit.getScheduler().runTaskAsynchronously(StorageAPI.getPlugin(), () -> {
             paths.forEach(p -> this.deleteHook().getConsumer().accept(p));
 
-            if(this.getCache().getFlushTask().canFlush()) {
+            //Store if it could flush at the time of calling.
+            boolean canFlush = this.getCache().getFlushTask().canFlush();
+
+            if(canFlush) {
                 this.deleteHook().complete();
                 this.getCache().getFlushTask().resetFlushCooldown();
 
