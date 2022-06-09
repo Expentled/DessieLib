@@ -17,9 +17,7 @@ import org.bukkit.persistence.PersistentDataType;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * An abstract {@link StorageContainer} that stores using the {@link PersistentDataContainer} from Spigot.
@@ -135,5 +133,10 @@ public abstract class PDContainer extends StorageContainer {
 
             return null;
         });
+    }
+
+    @Override
+    public Set<String> getKeys(String path) {
+        return new HashSet<>();
     }
 }

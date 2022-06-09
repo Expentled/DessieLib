@@ -120,6 +120,12 @@ public class JSONContainer extends RetrieveArrayContainer<JsonArray, JsonObject>
         }).onComplete(this::write);
     }
 
+    @Override
+    public Set<String> getKeys(String path) {
+        if(this.getElement(path, false) instanceof JsonObject object) {
+            return object.keySet();
+        } else return new HashSet<>();
+    }
 
     @Override
     protected BiConsumer<JsonArray, JsonObject> add() {

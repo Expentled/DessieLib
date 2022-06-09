@@ -13,10 +13,7 @@ import me.dessie.dessielib.storageapi.storage.decomposition.StorageDecomposer;
 import me.dessie.dessielib.storageapi.storage.settings.StorageSettings;
 import org.bukkit.Bukkit;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -84,6 +81,16 @@ public abstract class StorageContainer {
      * @return The {@link RetrieveHook} behavior.
      */
     protected abstract RetrieveHook retrieveHook();
+
+    /**
+     * Returns a list of all sub-paths one level below the provided path.
+     *
+     * This should return an empty list if the path has no sub-paths.
+     *
+     * @param path The path to get the keys for.
+     * @return The List of keys that are under the provided path.
+     */
+    public abstract Set<String> getKeys(String path);
 
     /**
      * Returns a cached object.

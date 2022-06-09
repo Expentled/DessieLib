@@ -528,6 +528,11 @@ public class MySQLContainer extends StorageContainer {
         });
     }
 
+    @Override
+    public Set<String> getKeys(String path) {
+        return new HashSet<>();
+    }
+
     private Pair<String, Object[]> createPath(Table table, Map<Column, Object> columns, ColumnPredicate... predicates) {
         StringBuilder path = new StringBuilder(table.getName() + ".");
         for(ColumnPredicate predicate : predicates) {

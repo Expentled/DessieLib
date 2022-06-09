@@ -17,7 +17,9 @@ import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
@@ -111,6 +113,12 @@ public class YAMLContainer extends RetrieveArrayContainer<List<Object>, Configur
     @Override
     protected RetrieveHook retrieveHook() {
         return new RetrieveHook(path -> this.getConfiguration().get(path));
+    }
+
+    @Override
+    public Set<String> getKeys(String path) {
+        ConfigurationSection section = this.getConfiguration().getConfigurationSection(path);
+        return section != null ? section.getKeys(false) : new HashSet<>();
     }
 
     @Override
