@@ -21,7 +21,6 @@ import java.util.List;
  */
 public abstract class XCommand implements TabExecutor {
 
-    private static final List<XCommand> commands = new ArrayList<>();
     private static final SimpleCommandMap map = ((CraftServer) Bukkit.getServer()).getCommandMap();
 
     private final String name;
@@ -173,39 +172,34 @@ public abstract class XCommand implements TabExecutor {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        for(XCommand xCommand : commands) {
-            if(xCommand.getName().equalsIgnoreCase(command.getName())) {
-                if(sender instanceof Player player) {
-                    xCommand.execute(player, args);
-                } else if(sender instanceof ConsoleCommandSender console) {
-                    xCommand.execute(console, args);
-                }
+        XCommand xCommand = CommandAPI.findCommand(command.getName());
+        if(xCommand == null) return false;
 
-                xCommand.execute(sender, args);
-
-                return true;
-            }
+        if (sender instanceof Player player) {
+            xCommand.execute(player, args);
+        } else if (sender instanceof ConsoleCommandSender console) {
+            xCommand.execute(console, args);
         }
 
-        return false;
+        xCommand.execute(sender, args);
+
+        return true;
     }
 
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
-        for(XCommand xCommand : commands) {
-            if(xCommand.getName().equalsIgnoreCase(command.getName())) {
-                List<String> completions = xCommand.executeTab(sender, args);
-                return completions == null ? null : StringUtil.copyPartialMatches(args[args.length - 1], completions, new ArrayList<>());
-            }
-        }
-        return new ArrayList<>();
+        XCommand xCommand = CommandAPI.findCommand(command.getName());
+
+        if(xCommand == null) return null;
+        List<String> completions = xCommand.executeTab(sender, args);
+        return completions == null ? null : StringUtil.copyPartialMatches(args[args.length - 1], completions, new ArrayList<>());
     }
 
     void register() {
         //Don't register a command that's already been registered.
         if(isRegistered()) return;
 
-        commands.add(this);
+        CommandAPI.getCommands().add(this);
 
         //Instantiate the protected PluginCommand constructor.
         try {
@@ -218,7 +212,7 @@ public abstract class XCommand implements TabExecutor {
             command.setTabCompleter(this);
             command.setPermission(this.getPermission());
             command.setDescription(this.getDescription());
-            command.setAliases(this.getAliases());
+            command.setAliases(this.getAliases().stream().map(String::toLowerCase).toList());
             command.setPermissionMessage(this.getPermissionMessage());
             command.setUsage(this.getUsage());
 
@@ -230,4 +224,5 @@ public abstract class XCommand implements TabExecutor {
 
         this.registered = true;
     }
+
 }

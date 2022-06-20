@@ -5,6 +5,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * Can register commands without them being in the plugin.yml
@@ -13,6 +16,8 @@ public class CommandAPI {
 
     private static JavaPlugin plugin;
     private static boolean registered = false;
+
+    private static final List<XCommand> commands = new ArrayList<>();
 
     /**
      * @param registerAllCommands If all commands should be registered by default.
@@ -93,5 +98,24 @@ public class CommandAPI {
      */
     public static boolean isRegistered() {
         return registered;
+    }
+
+    /**
+     * Returns all the registered {@link XCommand}s.
+     * @return All registered XCommands.
+     */
+    public static List<XCommand> getCommands() {
+        return commands;
+    }
+
+    /**
+     * Finds a registered {@link XCommand} that has the provided name or alias.
+     *
+     * @param name The name or alias to find.
+     * @return The XCommand that has the provided name or alias, or null if it does not exist.
+     */
+    public static XCommand findCommand(String name) {
+        return getCommands().stream().filter(command -> command.getName().equalsIgnoreCase(name)
+                || command.getAliases().contains(name.toLowerCase(Locale.ROOT))).findFirst().orElse(null);
     }
 }
