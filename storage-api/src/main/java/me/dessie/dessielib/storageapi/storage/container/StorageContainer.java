@@ -214,7 +214,7 @@ public abstract class StorageContainer {
      *         This will complete before {@link StorageHook#complete()} has been called.
      */
     public CompletableFuture<Void> store(String path, Object data) {
-        CompletableFuture<Void> future = this.storeData(path, data);
+        CompletableFuture<Void> future = this.storeData(path, data, true);
 
         if(this.getCache().getFlushTask().canFlush()) {
             future.thenRunAsync(() -> this.storeHook().complete());
@@ -244,7 +244,7 @@ public abstract class StorageContainer {
         List<CompletableFuture<Void>> futures = new ArrayList<>();
 
         for(Map.Entry<String, Object> entry : data.entrySet()) {
-            futures.add(this.storeData(entry.getKey(), entry.getValue()));
+            futures.add(this.storeData(entry.getKey(), entry.getValue(), true));
         }
 
         CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[] {}));
@@ -713,7 +713,7 @@ public abstract class StorageContainer {
      * @param path The path to store the data to.
      * @param data The data to store in the file format.
      */
-    private CompletableFuture<Void> storeData(String path, Object data) {
+    private CompletableFuture<Void> storeData(String path, Object data, boolean async) {
         Objects.requireNonNull(path, "Cannot store to null path!");
         CompletableFuture<Void> future = new CompletableFuture<>();
 
@@ -736,7 +736,7 @@ public abstract class StorageContainer {
         }
 
         DecomposedObject finalObject = object;
-        Bukkit.getScheduler().runTaskAsynchronously(StorageAPI.getPlugin(), () -> {
+        Runnable runnable = () -> {
             if (decomposer != null) {
                 //Add the placeholder for each decomposed path.
                 String decomposePath = path + ".%path%";
@@ -749,7 +749,7 @@ public abstract class StorageContainer {
                             this.storeHook().getConsumer().accept(compiledPath, arrayContainer.handleList(decomposedObject));
                             continue;
                         } else if(StorageContainer.getDecomposer(decomposedObject.getClass()) != null) {
-                            this.storeData(compiledPath, decomposedObject);
+                            this.storeData(compiledPath, decomposedObject, false);
                             continue;
                         }
                         this.storeHook().getConsumer().accept(compiledPath, decomposedObject);
@@ -762,7 +762,13 @@ public abstract class StorageContainer {
             }
 
             future.complete(null);
-        });
+        };
+
+        if(async) {
+            Bukkit.getScheduler().runTaskAsynchronously(StorageAPI.getPlugin(), runnable);
+        } else {
+            runnable.run();
+        }
 
         //No need to update these later, since this should overwrite them.
         this.getCache().getSetCache().remove(path);

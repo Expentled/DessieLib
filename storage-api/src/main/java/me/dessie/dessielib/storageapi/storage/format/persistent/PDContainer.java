@@ -128,6 +128,8 @@ public abstract class PDContainer extends StorageContainer {
                 if(registry == null) return null;
 
                 Tag tag = craftContainer.getRaw().get(key.toString());
+                if(tag == null) return null;
+
                 return registry.extract(tagTypes.get(tag.getClass()), tag);
             }
 
@@ -138,5 +140,13 @@ public abstract class PDContainer extends StorageContainer {
     @Override
     public Set<String> getKeys(String path) {
         return new HashSet<>();
+    }
+
+    @Override
+    public boolean isSupported(Class<?> clazz) {
+        if(tagTypes.containsValue(clazz)) return true;
+        if(getDecomposer(clazz) != null) return true;
+
+        return false;
     }
 }
