@@ -12,11 +12,11 @@ subprojects {
 
 allprojects {
     group 'me.dessie'
-    version '1.3.1'
+    version '1.3.2'
 }
 
 //Define the Minecraft and SpecialSource Versions.
-String minecraftVersion = "1.18.2-R0.1-SNAPSHOT"
+String minecraftVersion = "1.19-R0.1-SNAPSHOT"
 String specialSourceVersion = "1.11.0"
 
 //Find all the projects, used for publishing.
