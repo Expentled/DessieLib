@@ -127,6 +127,9 @@ public class StorageAPI {
 
                             for(int i = 0; i < argsArray.length; i++) {
                                 if((!annotation.allowNull() && argsArray[i] == null)) {
+                                    if(annotation.throwError()) {
+                                        throw new IllegalStateException("When recomposing " + clazz + ", the parameter " + paramArray[i] + " was found to be null when not allowed.");
+                                    }
                                     return null;
                                 } else if(argsArray[i] != null && argsArray[i] != paramArray[i] && !paramArray[i].isAssignableFrom(argsArray[i])) {
                                     if(annotation.throwError()) {

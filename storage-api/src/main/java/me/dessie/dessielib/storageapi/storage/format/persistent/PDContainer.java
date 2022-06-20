@@ -8,8 +8,8 @@ import me.dessie.dessielib.storageapi.storage.container.hooks.StoreHook;
 import me.dessie.dessielib.storageapi.storage.settings.StorageSettings;
 import net.minecraft.nbt.*;
 import org.bukkit.NamespacedKey;
-import org.bukkit.craftbukkit.v1_18_R2.persistence.CraftPersistentDataContainer;
-import org.bukkit.craftbukkit.v1_18_R2.persistence.CraftPersistentDataTypeRegistry;
+import org.bukkit.craftbukkit.v1_19_R1.persistence.CraftPersistentDataContainer;
+import org.bukkit.craftbukkit.v1_19_R1.persistence.CraftPersistentDataTypeRegistry;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataHolder;
 import org.bukkit.persistence.PersistentDataType;
@@ -17,9 +17,7 @@ import org.bukkit.persistence.PersistentDataType;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * An abstract {@link StorageContainer} that stores using the {@link PersistentDataContainer} from Spigot.
@@ -135,5 +133,10 @@ public abstract class PDContainer extends StorageContainer {
 
             return null;
         });
+    }
+
+    @Override
+    public Set<String> getKeys(String path) {
+        return new HashSet<>();
     }
 }

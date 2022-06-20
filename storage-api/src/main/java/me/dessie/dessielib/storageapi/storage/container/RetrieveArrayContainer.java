@@ -139,6 +139,12 @@ public abstract class RetrieveArrayContainer<H, N> extends ArrayContainer<H> {
                 }
             });
 
+            //For any non-completed paths, put null in their place since they were not found in the data structure.
+            recomposedObject.getCompletedPath().keySet().stream()
+                    .map(key -> recomposedObject.getCompletedPath().get(key))
+                    .filter(future -> !future.isDone())
+                    .forEach(future -> future.complete(null));
+
             list.add(recomposedObject.complete());
         });
 

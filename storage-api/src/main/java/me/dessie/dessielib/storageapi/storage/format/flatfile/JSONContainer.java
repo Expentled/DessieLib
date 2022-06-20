@@ -116,12 +116,16 @@ public class JSONContainer extends RetrieveArrayContainer<JsonArray, JsonObject>
     protected DeleteHook deleteHook() {
         return new DeleteHook(path -> {
             String[] tree = path.split("\\.");
-            if(this.getElement(path, false) instanceof JsonObject object) {
-                object.remove(tree[tree.length - 1]);
-            }
+            object.remove(tree[tree.length - 1]);
         }).onComplete(this::write);
     }
 
+    @Override
+    public Set<String> getKeys(String path) {
+        if(this.getElement(path, false) instanceof JsonObject object) {
+            return object.keySet();
+        } else return new HashSet<>();
+    }
 
     @Override
     protected BiConsumer<JsonArray, JsonObject> add() {
