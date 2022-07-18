@@ -13,21 +13,20 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiConsumer;
 
 /**
  * Builder for creating Items to put into InventoryBuilders.
  */
+@SuppressWarnings("all")
 public class ItemBuilder {
 
     private InventoryBuilder builder;
     private ItemStack item;
     private List<ItemStack> cycle = new ArrayList<>();
     private BiConsumer<Player, ItemBuilder> clickConsumer;
+    private final HashMap<ClickType, BiConsumer<Player, ItemBuilder>> clickConsumers;
 
     //Index of the cycle, where 0 is the item the builder was created with.
     private int cycleIndex = 0;
@@ -48,6 +47,7 @@ public class ItemBuilder {
 
         this.item = item;
         this.glowing = false;
+        this.clickConsumers = new HashMap<>();
     }
 
     /**
@@ -65,6 +65,7 @@ public class ItemBuilder {
         this.glowing = itemBuilder.isGlowing();
         this.heldItem = itemBuilder.getHeldItem();
         this.cycle = itemBuilder.getCycle();
+        this.clickConsumers = new HashMap<>();
     }
 
     /**
@@ -118,7 +119,7 @@ public class ItemBuilder {
     public List<String> getLore() { return this.getItem().getItemMeta().hasLore() ? this.getItem().getItemMeta().getLore() : new ArrayList<>(); }
 
     /**
-     * @return The current stacksize of the {@link ItemStack}
+     * @return The current stack size of the {@link ItemStack}
      */
     public int getAmount() {
         return this.item.getAmount();
@@ -144,14 +145,9 @@ public class ItemBuilder {
     public boolean isSimilar(ItemBuilder compare) {
         if(compare == null) return false;
 
-        if (this.getItem().isSimilar(compare.getItem()) && this.isGlowing() == compare.isGlowing()) {
-            if (this.isCancel() == compare.isCancel()) {
-                if(this.getCycle() == compare.getCycle()) {
-                    return true;
-                }
-            }
-        }
-
+        if (this.getItem().isSimilar(compare.getItem()) && this.isGlowing() == compare.isGlowing())
+            if (this.isCancel() == compare.isCancel())
+                return this.getCycle() == compare.getCycle();
         return false;
     }
 
@@ -220,6 +216,20 @@ public class ItemBuilder {
         return this;
     }
 
+    public ItemBuilder setLore(List<String> lore) {
+        lore.replaceAll(Colors::color);
+        ItemMeta meta = this.item.getItemMeta();
+        meta.setLore(lore);
+        this.item.setItemMeta(meta);
+        updateBuilder();
+        return this;
+    }
+
+    public ItemBuilder addEnchant(Enchantment enchant, Integer level) {
+        this.getItem().addEnchantment(enchant, level);
+        return this;
+    }
+
     /**
      * @param enchants The Enchantments to add
      * @return The ItemBuilder
@@ -239,6 +249,10 @@ public class ItemBuilder {
         meta.addItemFlags(flags);
         this.getItem().setItemMeta(meta);
         return this;
+    }
+
+    public ItemBuilder hideFlags() {
+        return setFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_DESTROYS, ItemFlag.HIDE_DYE, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_PLACED_ON, ItemFlag.HIDE_POTION_EFFECTS, ItemFlag.HIDE_UNBREAKABLE);
     }
 
     /**
@@ -262,7 +276,7 @@ public class ItemBuilder {
     }
 
     /**
-     * Called when the ItemBuilder is clicked.
+     * Sets the default clickConsumer. Called when the ItemBuilder is clicked.
      * @param consumer A BiFunction containing the Player that clicked the item
      *                 and the ItemBuilder itself.
      * @return The ItemBuilder
@@ -270,6 +284,26 @@ public class ItemBuilder {
     public ItemBuilder onClick(BiConsumer<Player, ItemBuilder> consumer) {
         this.clickConsumer = consumer;
         return this;
+    }
+
+    /**
+     * Sets a clickConsumer for a specfic {@link ClickType}. Called when the ItemBuilder is clicked
+     * @param clickType {@link ClickType} called in the {@link org.bukkit.event.inventory.InventoryClickEvent}
+     * @param consumer A BiFunction containing the Player that clicked the item
+     *                 and the ItemBuilder itself.
+     * @return The ItemBuilder
+     */
+    public ItemBuilder onClick(ClickType clickType, BiConsumer<Player, ItemBuilder> consumer) {
+        this.clickConsumers.put(clickType, consumer);
+        return this;
+    }
+
+    public BiConsumer<Player, ItemBuilder> getClickConsumer() {
+        return this.clickConsumer;
+    }
+
+    protected HashMap<ClickType, BiConsumer<Player, ItemBuilder>> getClickConsumers() {
+        return this.clickConsumers;
     }
 
     /**

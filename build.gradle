@@ -108,7 +108,7 @@ configure(addSpigotDepend) {
         compileOnly "org.spigotmc:spigot-api:${minecraftVersion}"
 
         //SpecialSource dependency
-        compileOnly"net.md-5:SpecialSource:${specialSourceVersion}:shaded"
+        compileOnly "net.md-5:SpecialSource:${specialSourceVersion}:shaded"
     }
 }
 
@@ -124,7 +124,7 @@ configure(publicAll) {
     publishing {
         repositories.maven {
             name = "GitHubPackages"
-            url "https://maven.pkg.github.com/dessie0/dessielib"
+            url "https://maven.pkg.github.com/expentled/dessielib"
             credentials {
                 username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_USERNAME")
                 password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")

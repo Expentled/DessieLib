@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 /**
  * Builder for creating Inventories with InventoryAPI.
  */
+@SuppressWarnings("all")
 public class InventoryBuilder {
     private static HashMap<Player, InventoryBuilder> inventories = new HashMap<>();
 

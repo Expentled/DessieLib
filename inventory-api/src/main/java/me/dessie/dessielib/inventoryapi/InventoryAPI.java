@@ -81,7 +81,17 @@ public class InventoryAPI implements Listener {
                 if (item.isCancel()) {
                     event.setCancelled(true);
                 }
-                item.executeClick(player, item);
+
+                if(item.getClickConsumers().size() > 0) {
+                    for(ClickType type : ClickType.values()) {
+                        if(type == item.clickType) {
+                            if(item.getClickConsumers().containsKey(type))
+                                item.getClickConsumers().get(type).accept(player, item);
+                            else item.executeClick(player, item);
+                        }
+                    }
+                } else item.executeClick(player, item);
+
                 item.swap();
                 return;
             }
